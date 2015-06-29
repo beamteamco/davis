@@ -22,7 +22,7 @@ function varargout = xrViewer_v1(varargin)
 
 % Edit the above text to modify the response to help xrViewer_v1
 
-% Last Modified by GUIDE v2.5 23-Jun-2015 09:53:56
+% Last Modified by GUIDE v2.5 24-Jun-2015 13:24:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -122,6 +122,8 @@ axes(handles.axes_spec)
 axis square        
 % Update handles structure
 guidata(hObject, handles);
+% setUIProperties_xrViewer(hObject,handles)
+
 
 % UIWAIT makes xrViewer_v1 wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -556,10 +558,12 @@ guidata(hObject,handles)
 
 
 % --------------------------------------------------------------------
-function Untitled_1_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_1 (see GCBO)
+function untitled0_Callback(hObject, eventdata, handles)
+% hObject    handle to untitled0 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+
 
 
 % --------------------------------------------------------------------
@@ -581,7 +585,8 @@ function button_debug_Callback(hObject, eventdata, handles)
 % hObject    handle to button_debug (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-radialCompute(hObject,handles);
+setUIProperties_xrViewer(hObject,handles)
+guidata(hObject,handles)
 
 
 % --- Executes on mouse press over axes background.
@@ -592,8 +597,8 @@ function axes_left_ButtonDownFcn(hObject, eventdata, handles)
 
 
 % --------------------------------------------------------------------
-function Untitled_5_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_5 (see GCBO)
+function men_v1_Callback(hObject, eventdata, handles)
+% hObject    handle to men_v1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 temp = figure();
@@ -614,8 +619,8 @@ function plot_men1_Callback(hObject, eventdata, handles)
 
 
 % --------------------------------------------------------------------
-function Untitled_10_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_10 (see GCBO)
+function men_v3_Callback(hObject, eventdata, handles)
+% hObject    handle to men_v3 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 temp = figure();
@@ -634,8 +639,8 @@ else
 end
 
 % --------------------------------------------------------------------
-function Untitled_9_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_9 (see GCBO)
+function men_v2_Callback(hObject, eventdata, handles)
+% hObject    handle to men_v2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 temp = figure();
@@ -1528,8 +1533,8 @@ guidata(hObject,handles)
 
 
 % --------------------------------------------------------------------
-function Untitled_14_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_14 (see GCBO)
+function men_s3_Callback(hObject, eventdata, handles)
+% hObject    handle to men_s3 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 x = getimage(handles.axes_spec);
@@ -1549,8 +1554,8 @@ else
     msgbox('Please export non-plot images');
 end
 % --------------------------------------------------------------------
-function Untitled_13_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_13 (see GCBO)
+function men_s2_Callback(hObject, eventdata, handles)
+% hObject    handle to men_s2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 x = getimage(handles.axes_right);
@@ -1570,8 +1575,8 @@ else
 end
 
 % --------------------------------------------------------------------
-function Untitled_12_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_12 (see GCBO)
+function men_s1_Callback(hObject, eventdata, handles)
+% hObject    handle to men_s1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 x = getimage(handles.axes_left);
@@ -1604,3 +1609,121 @@ function menu_larparmrefine_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 xrViewer_LatParmRefine();
+
+
+% --------------------------------------------------------------------
+function Untitled_16_Callback(hObject, eventdata, handles)
+% hObject    handle to untitled0 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menu_saveParam_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_saveParam (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%order will be directory, stem, extention, dark numbers, normalize filepath,
+%left index, right index, angle, spread, centerx, centery, radiusU,
+%radiusL,  image#
+
+filename = uiputfile({'*.parm','Parameters File (*.parm)'},'Save Parameters');
+
+dstring = get(handles.edit_dimages,'String');
+dstring(dstring==',')='$';
+outData = {get(handles.edit_directory,'String'),...
+        get(handles.edit_stem,'String'),...
+        get(handles.edit_exten,'String'),...
+        dstring,...
+        get(handles.edit_normFile,'String'),...
+        get(handles.edit_indexL,'String'),...
+        get(handles.edit_indexR,'String'),...
+        get(handles.edit_energy,'String'),...
+        get(handles.edit_distance,'String'),...
+        get(handles.edit_pixel,'String'),...
+        get(handles.edit_exposure,'String'),...
+        get(handles.edit_normOffset,'String'),...
+        get(handles.edit_angle,'String'),...
+        get(handles.edit_spread,'String'),...
+        get(handles.edit_x,'String'),...
+        get(handles.edit_y,'String'),...
+        get(handles.edit_radius,'String'),...
+        get(handles.edit_radius2,'String'),...
+        get(handles.edit_radNum,'String'),...
+        get(handles.edit_bins,'String')};
+
+if(isnumeric(filename)==0)
+    writetable(cell2table(outData),filename,'WriteVariableNames',0,'FileType','text');
+end
+
+
+% --------------------------------------------------------------------
+function menu_openParam_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_openParam (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+[t1,t2] = uigetfile({'*.parm','Parameters File (*.parm)'},'Open Parameters');
+filename=[t2,t1];
+disp(filename)
+%opens the sequence .dat file and loads it into the uitable
+if(isnumeric(filename)==0)
+    fid=fopen(filename);
+    inData = textscan(fid,'%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s','Delimiter',',');
+    fclose(fid);
+
+
+    dstring = cell2mat(inData{1,4});
+    dstring(dstring=='$')=',';
+    set(handles.edit_stem,'String',cell2mat(inData{1,2}))
+    set(handles.edit_exten,'String',cell2mat(inData{1,3}))
+    set(handles.edit_dimages,'String',dstring)
+    set(handles.edit_normFile,'String',cell2mat(inData{1,5}))
+    set(handles.edit_indexL,'String',cell2mat(inData{1,6}))
+    set(handles.edit_indexR,'String',cell2mat(inData{1,7}))
+    set(handles.edit_energy,'String',cell2mat(inData{1,8}))
+    set(handles.edit_distance,'String',cell2mat(inData{1,9}))
+    set(handles.edit_pixel,'String',cell2mat(inData{1,10}))
+    set(handles.edit_exposure,'String',cell2mat(inData{1,11}))
+    set(handles.edit_normOffset,'String',cell2mat(inData{1,12}))
+    set(handles.edit_angle,'String',cell2mat(inData{1,13}))
+    set(handles.edit_spread,'String',cell2mat(inData{1,14}))
+    set(handles.edit_x,'String',cell2mat(inData{1,15}))
+    set(handles.edit_y,'String',cell2mat(inData{1,16}))
+    set(handles.edit_radius,'String',cell2mat(inData{1,17}))
+    set(handles.edit_radius2,'String',cell2mat(inData{1,18}))
+    set(handles.edit_radNum,'String',cell2mat(inData{1,19}))
+    set(handles.edit_bins,'String',cell2mat(inData{1,20}))
+    
+    
+    handles.directory = cell2mat(inData{1,1});
+    extenL = length(get(handles.edit_exten,'String'));
+
+    if(length(handles.directory)~=1 || ~isempty(handles.directory))
+        set(handles.edit_directory,'String',handles.directory);
+        handles.D=dir(handles.directory);
+        stemEnd=-1;
+
+        for i=1:length(handles.D)
+            if(handles.D(i).name(1)~='.')
+                for j=1:length(handles.D(i).name)
+                    if(handles.D(i).name(j)=='0')
+                        stemEnd = j-1;
+                        handles.stem = handles.D(i).name(1:stemEnd);
+                        handles.numLength = length(handles.D(i).name)-stemEnd-extenL; %5 is for file extension (.tiff)
+                        set(handles.edit_stem,'String',handles.stem);
+                        break;
+                    end
+                end
+                if(stemEnd~=-1)
+                    break;
+                end
+            end
+        end
+        edit_dimages_Callback(hObject, eventdata, handles)
+    end
+
+    disp('Parameters Loaded')
+    guidata(hObject,handles);
+end
