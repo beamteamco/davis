@@ -8,7 +8,7 @@ for(i=1:handles.count)
                     summ = (handles.images{i}-handles.dark).*handles.normVals(i);
                     ct=ct+1;
                 else
-                    summ = summ + (handles.images{i}-handles.dark).*handles.normVals(i);;
+                    summ = summ + (handles.images{i}-handles.dark).*handles.normVals(i);
                     ct=ct+1;
                 end
             end

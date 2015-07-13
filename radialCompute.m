@@ -97,10 +97,14 @@ else
 %     wb = waitbar(0,'Calculating...');
 %     tot = length(r)*length(thetas);
 
+
+    %tempOutput = distributed(zeros(length(r),length(thetas)));
+    tempOutput = zeros(length(r),length(thetas));
+
     for(i=1:length(r))
         for(j=1:length(thetas))
             if(pxX(i,j) > 2048 || pxX(i,j) < 1 || pxY(i,j) > 2048 || pxY(i,j) < 1)
-                tempOutput(i,j) = -1;
+                tempOutput(i,j) = 0;
             else
                 tempOutput(i,j) = inputImage(pxY(i,j),pxX(i,j));
 %             output(i) = inputImage(floor(pxX(i)),floor(pxY(i)));
@@ -108,6 +112,7 @@ else
 %             waitbar(((j*(i-1))+j)/tot,wb);
         end
     end
+   
     %^^ rows are increment in radius, column increments in (dtheta)
     
 %     integral3d = tempOutput*thetas';

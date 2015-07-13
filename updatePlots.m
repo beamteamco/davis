@@ -230,6 +230,7 @@ if(handles.loaded == 1)
                     open(outputVideo)
                 end
                 handles.binImages = {};
+                
                 for(i=0:bins-1)
                     sp2 = 360/bins;
                     params = [angle+sp2*i, sp2/2, radiusU, cX, cY, radiusL];
