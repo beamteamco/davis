@@ -22,7 +22,7 @@ function varargout = xrViewer_LatParmRefine(varargin)
 
 % Edit the above text to modify the response to help xrViewer_LatParmRefine
 
-% Last Modified by GUIDE v2.5 23-Jun-2015 09:32:05
+% Last Modified by GUIDE v2.5 21-Jul-2015 12:59:11
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -63,7 +63,7 @@ handles.DATA_2THETA = [];
 handles.DATA_MAXES = [,];
 handles.binDATA = [];
 handles.filename = '';
-
+handles.lattice_params = [];
 handles.DATA_INITSPACING = [];
 handles.numBins = 0;
 handles.binNum = str2double(get(handles.edit_binNum,'String'));
@@ -189,6 +189,7 @@ if(length(t1)~=1)
 
 %     disp(handles.DATA_INITSPACING(1))
     
+    handles.lattice_params = zeros(handles.numBins,3);
     xrLatParmRefine_updatePlots(hObject,handles);
     
 end
@@ -1074,6 +1075,11 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
     set(handles.text_parmB,'String',['b = ',num2str(a0out(2))]);
     set(handles.text_parmC,'String',['c = ',num2str(a0out(3))]);
     set(handles.text_parmResid2,'String',num2str(a0resid));
+    
+    handles.lattice_params(handles.binNum,1)=a0out(1);
+    handles.lattice_params(handles.binNum,2)=a0out(2);
+    handles.lattice_params(handles.binNum,3)=a0out(3);
+    
     assignin('base','a0resid',a0resid);
 
     filename = [handles.filename(1:end-4),'_LarParmRefine.mat'];
@@ -1087,3 +1093,43 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
     xrLatParmRefine_updatePlots(hObject,handles); 
 end
 guidata(hObject,handles)
+
+
+% --- Executes on button press in button_binMinus.
+function button_binMinus_Callback(hObject, eventdata, handles)
+% hObject    handle to button_binMinus (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if(handles.numBins == 0)
+    set(handles.edit_binNum,'String','1');
+else
+    if(handles.binNum~=1)
+        handles.binNum = handles.binNum-1;
+        handles.DATA_INTENSITY = handles.binDATA(:,3*(handles.binNum-1)+1);    
+        handles.DATA_2THETA = handles.binDATA(:,3*(handles.binNum-1)+2);
+        handles.DATA_DSPACING = handles.binDATA(:,3*(handles.binNum-1)+3);
+        set(handles.edit_binNum,'String',num2str(handles.binNum));
+    end
+end
+xrLatParmRefine_updatePlots(hObject,handles);
+guidata(hObject,handles);
+
+% --- Executes on button press in button_binPlus.
+function button_binPlus_Callback(hObject, eventdata, handles)
+% hObject    handle to button_binPlus (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if(handles.numBins == 0)
+    set(handles.edit_binNum,'String','1');
+else
+    if(handles.binNum~=handles.numBins)
+        handles.binNum = handles.binNum+1;
+        handles.DATA_INTENSITY = handles.binDATA(:,3*(handles.binNum-1)+1);    
+        handles.DATA_2THETA = handles.binDATA(:,3*(handles.binNum-1)+2);
+        handles.DATA_DSPACING = handles.binDATA(:,3*(handles.binNum-1)+3);
+        set(handles.edit_binNum,'String',num2str(handles.binNum));
+    end
+end
+xrLatParmRefine_updatePlots(hObject,handles);
+guidata(hObject,handles);

@@ -1,4 +1,4 @@
-function [output1] = xrLatParmRefine_updatePlots(hObject, handles)
+function [output1,varargout] = xrLatParmRefine_updatePlots(hObject, handles)
 axes(handles.axes_plot)
 if(handles.loaded == 1)
     if(get(handles.radiobutton_dspace,'Value')==1)
