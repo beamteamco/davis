@@ -22,7 +22,7 @@ function varargout = xrViewer_LatParmRefine(varargin)
 
 % Edit the above text to modify the response to help xrViewer_LatParmRefine
 
-% Last Modified by GUIDE v2.5 21-Jul-2015 12:59:11
+% Last Modified by GUIDE v2.5 22-Jul-2015 14:22:00
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -69,6 +69,11 @@ handles.numBins = 0;
 handles.binNum = str2double(get(handles.edit_binNum,'String'));
 
 handles.DATA_FIT = {};
+
+handles.maxParams = struct(...
+    'Imin',0,...
+    'Imax',3*10^4,...
+    'SpacingMin',0.1);
 
 set(handles.pushbutton_openFile,'CData',imread('icon_folder.png'));
 set(gcf,'WindowButtonMotionFcn',@(gcf,eventdata)axesMouseOverCallback(gcf,hObject,handles));
@@ -393,7 +398,8 @@ function pushbutton_calcMax_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 popval = get(handles.popupmenu_type,'Value');
-
+disp('Maximum Calculation Parameters');
+disp(handles.maxParams);
 type = '';
 switch(popval)
     case(1)
@@ -417,49 +423,53 @@ if(handles.loaded==1)
     handles.DATA_MAXES = [,];
     threshold = str2double(get(handles.edit_threshold,'String'));
     totmax = max(handles.DATA_INTENSITY);
-    width = 13;
+    width = 1;
     pass = 0;
     
     numThresh = threshold*0.0001*totmax;
     disp(numThresh);
     
-    for(i=width-1:length(handles.DATA_DSPACING)-(width-1))
+    %Redo indexperspace, nonlinaer relationship
+    indexPerSpace = length(handles.DATA_DSPACING)/abs(handles.DATA_DSPACING(2)-handles.DATA_DSPACING(end));
+    disp(abs(handles.DATA_DSPACING(2)-handles.DATA_DSPACING(end)))
+    disp(handles.DATA_DSPACING)
+    disp(['indexperspace = ',num2str(indexPerSpace)])
+    for(i=2:length(handles.DATA_DSPACING)-1)        
+        if((handles.DATA_INTENSITY(i) >= handles.maxParams.Imin) &&...
+                (handles.DATA_INTENSITY(i) <= handles.maxParams.Imax) &&...
+                (handles.DATA_INTENSITY(i) > handles.DATA_INTENSITY(i-1)) &&...
+                (handles.DATA_INTENSITY(i) > handles.DATA_INTENSITY(i+1)))
+            for(j=(i-floor(handles.maxParams.SpacingMin*indexPerSpace)):(i+floor(handles.maxParams.SpacingMin*indexPerSpace)))
+                if(handles.DATA_INTENSITY(i) >= handles.DATA_INTENSITY(j))
+                    pass=1;
+                else
+                    pass=0;
+                    break;
+                end
+            end
+            
+            if(pass==1)
+                indexx=1;
+                handles.DATA_MAXES(z,1:2) = [handles.DATA_DSPACING(i),handles.DATA_INTENSITY(i)];
+                handles.DATA_MAXES(z,3) = 0.25; 
+                handles.DATA_MAXES(z,4) = handles.DATA_2THETA(i);
+                for(k=1:length(handles.DATA_INITSPACING))
+                    if(abs(handles.DATA_DSPACING(i)-handles.DATA_INITSPACING(k))<abs(handles.DATA_DSPACING(i)-handles.DATA_INITSPACING(indexx)))
+                        indexx = k;
+                    end                
+                end
+                handles.DATA_MAXES(z,5) = str2double([num2str(hkls(1,indexx)),num2str(hkls(2,indexx)),num2str(hkls(3,indexx))]);
+                z=z+1;
+            end 
         
-        for(j=1:(width-1)/2)
-            if(handles.DATA_INTENSITY(i) > handles.DATA_INTENSITY(i-j) + numThresh)
-                pass = 1;
-            else
-                pass=0;
-                break;
-            end
-            if(handles.DATA_INTENSITY(i) > handles.DATA_INTENSITY(i+j) + numThresh)
-                pass = 1;
-            else
-                pass=0;
-                break;
-            end
-        end
-        
-        if(pass==1)
-            indexx=1;
-            handles.DATA_MAXES(z,1:2) = [handles.DATA_DSPACING(i),handles.DATA_INTENSITY(i)];
-            handles.DATA_MAXES(z,3) = 0.25; 
-            handles.DATA_MAXES(z,4) = handles.DATA_2THETA(i);
-            for(k=1:length(handles.DATA_INITSPACING))
-                if(abs(handles.DATA_DSPACING(i)-handles.DATA_INITSPACING(k))<abs(handles.DATA_DSPACING(i)-handles.DATA_INITSPACING(indexx)))
-                    indexx = k;
-                end                
-            end
-            handles.DATA_MAXES(z,5) = str2double([num2str(hkls(1,indexx)),num2str(hkls(2,indexx)),num2str(hkls(3,indexx))]);
-            z=z+1;
-        end        
+        end    
     end
     
     handles.DATA_MAXES = orderSort(handles.DATA_MAXES,'a',1);
     if(~isempty(handles.DATA_MAXES))
-        set(handles.uitable_maxes,'Data',[num2cell(handles.DATA_MAXES(:,1)),num2cell(handles.DATA_MAXES(:,2)),num2cell(handles.DATA_MAXES(:,3)),num2cell(handles.DATA_MAXES(:,5))])
+        set(handles.uitable_maxes,'Data',[num2cell(handles.DATA_MAXES(:,1)),num2cell(handles.DATA_MAXES(:,2)),num2cell(handles.DATA_MAXES(:,3)),num2cell(handles.DATA_MAXES(:,5))]);
     else
-        set(handles.uitable_maxes,'Data',{})
+        set(handles.uitable_maxes,'Data',{});
     end
     
 % %     width2 = 0.05;
@@ -474,6 +484,7 @@ if(handles.loaded==1)
 % %     disp(tval);
 % % %     figure
 % % %     stem(tval);
+    disp('Maximum Calculation Complete')
     set(handles.text_maxnum,'String',['Max # = ',num2str(size(handles.DATA_MAXES,1))]);
     xrLatParmRefine_updatePlots(hObject,handles);
 else
@@ -1046,6 +1057,10 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
         handles.DATA_FIT{i,2}=xDataT;
         handles.DATA_FIT{i,3}=pfunc(p, xDataT,type);        
 
+        %tth_fit is the ideal 2theta (or d-spacing), the value which the
+        %least squares reduction below tries to optimize to (using a, b, c
+        %lattice parameters)
+        
         tth_fit(1,i) = p(4);
         A_fit(1,i) = p(1);
         Resnorm_fit(1,i) = resnorm;
