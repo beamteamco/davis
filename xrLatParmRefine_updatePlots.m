@@ -8,9 +8,12 @@ if(handles.loaded == 1)
         xlabel(handles.axes_plot,'d-spacing (Å)');
         
         if(get(handles.checkbox_autoY,'Value')==1)
-            ylim(handles.axes_plot,'auto');            
+%             ylim(handles.axes_plot,'auto');           
+%             set(handles.axes_plot,'YLimMode','auto');
+            set(handles.axes_plot,'YLim',[min(handles.DATA_INTENSITY),1.1*max(handles.DATA_INTENSITY)])
         else
-            ylim(handles.axes_plot,[str2double(get(handles.edit_YMin,'String')),str2double(get(handles.edit_YMax,'String'))]);
+%             ylim(handles.axes_plot,[str2double(get(handles.edit_YMin,'String')),str2double(get(handles.edit_YMax,'String'))]);
+            set(handles.axes_plot,'YLim',[str2double(get(handles.edit_YMin,'String')),str2double(get(handles.edit_YMax,'String'))]);
         end
         
         if(get(handles.checkbox_autoX,'Value')==1)
@@ -18,6 +21,9 @@ if(handles.loaded == 1)
         else
             xlim(handles.axes_plot,[str2double(get(handles.edit_XMin,'String')),str2double(get(handles.edit_XMax,'String'))]);
         end
+        
+        guidata(hObject,handles);
+        handles = guidata(hObject);
         
         if(~isempty(handles.DATA_MAXES))
            hold on;
@@ -104,6 +110,7 @@ if(handles.loaded == 1)
         if(~isempty(handles.DATA_INITSPACING) && get(handles.checkbox_initspacing,'Value')==1)
            hold on;
            ys=get(handles.axes_plot,'YLim');
+           disp(ys);
            for(i=1:length(handles.DATA_INITSPACING))
                 plot(handles.axes_plot,[handles.DATA_INITSPACING(i),handles.DATA_INITSPACING(i)],ys,':b');
            end
