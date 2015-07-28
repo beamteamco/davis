@@ -22,7 +22,7 @@ function varargout = xrViewer_v1(varargin)
 
 % Edit the above text to modify the response to help xrViewer_v1
 
-% Last Modified by GUIDE v2.5 24-Jun-2015 13:24:45
+% Last Modified by GUIDE v2.5 28-Jul-2015 09:23:27
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -440,9 +440,17 @@ if(length(handles.directory)~=1)
 
 
     ct=1;
-    for i=1:length(handles.D)
-        if(~isempty(strfind(char({handles.D(i).name}),handles.stem)))
-            t(ct) = {handles.D(i).name};
+    hidden=0;
+    
+    for(i=1:length(handles.D)) %code needed for removing hidden '.' files
+        if(handles.D(i).name(1)=='.')
+            handles.D(i).name(1)='';
+            hidden=hidden+1;
+        end
+    end
+    for i=1:length(handles.D)-hidden
+        if(~isempty(strfind(char({handles.D(i+hidden).name}),handles.stem)))
+            t(ct) = {handles.D(i+hidden).name};
             ct=ct+1;
         end    
     end
@@ -455,7 +463,9 @@ if(length(handles.directory)~=1)
 
     for i=1:handles.count
     %     disp([handles.directory,'\',handles.imageNames{i,1}])
-        handles.images(i) = {ReadInGE([handles.directory,'\',handles.imageNames{i}])};
+        handles.images(i) = {ReadInGE([handles.directory,'\',handles.imageNames{i}])};       
+        tempp = handles.images(i);
+%         assignin('base','assignedImage',tempp)
         disp([handles.directory,'\',handles.imageNames{i}])
     end
 
@@ -487,6 +497,7 @@ if(length(handles.directory)~=1)
     end
 
 
+%     assignin('base','assignedImages',handles.images)
     %plots the figures
     updatePlots(hObject,handles);
 end
@@ -1727,3 +1738,67 @@ if(isnumeric(filename)==0)
     disp('Parameters Loaded')
     guidata(hObject,handles);
 end
+
+
+% --------------------------------------------------------------------
+function menu_binall_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_binall (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+[t1] = uigetdir('Choose Bin Data Destination Folder');
+
+if(~ischar(t1))
+    return
+end
+
+prompt = {'File Stem','# of Bins'};
+
+title = 'Choose Output File Stem';
+def = {'binData','72'};
+
+answer = inputdlg(prompt,title,1,def);
+
+if(isempty(answer))
+    return
+end
+
+set(handles.checkbox_vout,'Value',1);            
+setappdata(handles.axes_spec,'type',3);
+
+binData = {};
+
+if(get(handles.button_conv1,'UserData')==0)
+    radiusU = str2double(get(handles.edit_radius,'String'));
+    radiusL = str2double(get(handles.edit_radius2,'String'));
+elseif(get(handles.button_conv1,'UserData')==1)
+    radiusU = tan(str2double(get(handles.edit_radius,'String'))/(180/pi()))/(pxLength/dist);
+    radiusL = tan(str2double(get(handles.edit_radius2,'String'))/(180/pi()))/(pxLength/dist);
+end
+        
+angle = str2double(get(handles.edit_angle,'String'));
+bins = str2double(answer{2});
+cX = str2double(get(handles.edit_x,'String'));
+cY = str2double(get(handles.edit_y,'String'));
+        
+for(j=1:handles.count)
+    if(isempty(find(handles.darkNum==j-1,1)))
+        image = handles.images{j};
+        binData={};
+        for(i=0:bins-1)
+            sp2 = 360/bins;
+            params = [angle+sp2*i, sp2/2, radiusU, cX, cY, radiusL];
+            [im,thetas,d_spacing] = radialCompute(handles,image,0,params,0);
+            disp(['Bin #',num2str(i+1),' completed'])
+
+            binData = [binData,[{[num2str(angle+sp2*i-sp2/2),'° to ',num2str(angle+sp2*i+sp2/2),'°','intensity'],'2theta ','d-spacing'};num2cell(im),num2cell(thetas'),num2cell(d_spacing');...
+                {'beam energy','',''};...
+            num2cell(str2double(get(handles.edit_energy,'String'))),{'',''}]];
+        end
+
+        filename = [t1,'\',[answer{1},'_Image',num2str(j),'.mat']];
+        save(filename,'binData');
+        disp(['Image #',num2str(j),' Completed and Data Saved']);
+    end
+end
+disp('All Images Binned');

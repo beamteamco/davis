@@ -22,7 +22,7 @@ function varargout = xrViewer_LatParmRefine(varargin)
 
 % Edit the above text to modify the response to help xrViewer_LatParmRefine
 
-% Last Modified by GUIDE v2.5 27-Jul-2015 13:32:27
+% Last Modified by GUIDE v2.5 28-Jul-2015 13:42:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -504,11 +504,11 @@ if(handles.loaded==1)
             iLeft = floor(indexPerSpace*2*180*asin((lambda*(1e10))/(2*(handles.DATA_DSPACING(i)+handles.maxParams.SpacingMin)))/pi());
             iRight = floor(indexPerSpace*2*180*asin((lambda*(1e10))/(2*(handles.DATA_DSPACING(i)-handles.maxParams.SpacingMin)))/pi());
             
-            if(iRight>2048)
-                iRight=2048;
+            if(iRight>length(handles.DATA_INTENSITY))
+                iRight=length(handles.DATA_INTENSITY);
             end
-            if(iLeft>2048)
-                iLeft=2048;
+            if(iLeft<1)
+                iLeft=1;
             end
             
             for(j=iLeft:iRight)
@@ -1143,9 +1143,9 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
     % disp(a0)
 
     a0out = [0 0 0];
-    ff = @(x)LatParmResid2(x,tth_fit,keV2Angstrom(handles.ENERGY),hkls,typeLatt);
-    [a0out,a0resid,iterflag] = lsqnonlin(ff,parms0,2,4,options);
-
+    ff = @(x)LatParmResid(x,tth_fit,keV2Angstrom(handles.ENERGY),hkls,typeLatt);
+    [a0out,a0resid,iterflag] = lsqnonlin(ff,parms0(1),2,4,options);
+    a0out(2:3)=0;
     set(handles.text_parmA,'String',['a = ',num2str(a0out(1))]);
     set(handles.text_parmB,'String',['b = ',num2str(a0out(2))]);
     set(handles.text_parmC,'String',['c = ',num2str(a0out(3))]);
@@ -1200,7 +1200,7 @@ else
 end
 
 handles.maxParams.Imax = max(handles.DATA_INTENSITY);
-handles.maxParams.Imin = 0.15*max(handles.DATA_INTENSITY);
+handles.maxParams.Imin = 0.65*max(handles.DATA_INTENSITY);
 handles.maxParams.SpacingMin = 0.1;
 
 %updates the max values based on stored data
@@ -1243,7 +1243,7 @@ else
 end
 
 handles.maxParams.Imax = max(handles.DATA_INTENSITY);
-handles.maxParams.Imin = 0.15*max(handles.DATA_INTENSITY);
+handles.maxParams.Imin = 0.65*max(handles.DATA_INTENSITY);
 handles.maxParams.SpacingMin = 0.1;
 
 %updates the max values based on stored data
@@ -1367,7 +1367,7 @@ for(i=1:handles.numBins)
 
 
     handles.maxParams.Imax = max(handles.DATA_INTENSITY);
-    handles.maxParams.Imin = 0.15*max(handles.DATA_INTENSITY);
+    handles.maxParams.Imin = 0.65*max(handles.DATA_INTENSITY);
     handles.maxParams.SpacingMin = 0.1;
 
     %updates the max values based on stored data
@@ -1426,11 +1426,11 @@ for(i=1:handles.numBins)
                 iLeft = floor(indexPerSpace*2*180*asin((lambda*(1e10))/(2*(handles.DATA_DSPACING(i)+handles.maxParams.SpacingMin)))/pi());
                 iRight = floor(indexPerSpace*2*180*asin((lambda*(1e10))/(2*(handles.DATA_DSPACING(i)-handles.maxParams.SpacingMin)))/pi());
 
-                if(iRight>2048)
-                    iRight=2048;
+                if(iRight>length(handles.DATA_INTENSITY))
+                    iRight=length(handles.DATA_INTENSITY);
                 end
-                if(iLeft>2048)
-                    iLeft=2048;
+                if(iLeft<1)
+                    iLeft=1;
                 end
 
                 for(j=iLeft:iRight)
@@ -1618,9 +1618,11 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
         % disp(a0)
 
         a0out = [0 0 0];
-        ff = @(x)LatParmResid2(x,tth_fit,keV2Angstrom(handles.ENERGY),hkls,typeLatt);
-        [a0out,a0resid,iterflag] = lsqnonlin(ff,parms0,2,4,options);
-
+        ff = @(x)LatParmResid(x,tth_fit,keV2Angstrom(handles.ENERGY),hkls,typeLatt);
+        [a0out,a0resid,iterflag] = lsqnonlin(ff,parms0(1),2,4,options);     % using first param for cubic, lsq algorithm requires 
+                                                                            % equation for every variable (a,b,c) even if unused
+        a0out(2:3)=0; % fix related to above (for cubic)
+        
         handles.lattice_params(handles.binNum,1)=a0out(1);
         handles.lattice_params(handles.binNum,2)=a0out(2);
         handles.lattice_params(handles.binNum,3)=a0out(3);
@@ -1660,3 +1662,164 @@ set(handles.checkbox_fits,'Value',1);
 xrLatParmRefine_updatePlots(hObject,handles); 
 assignin('base','DATA',handles.DATA)
 guidata(hObject,handles)
+
+
+% --------------------------------------------------------------------
+function menu_loadrefine_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_loadrefine (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if(handles.loaded==0)
+    msgbox('Load bin data before refinement parameters');
+    return
+end
+
+[t1,t2] = uigetfile('*.mat','Select Refinement .mat File');
+
+if(~ischar(t1))
+    return
+end
+
+inputData = load([t2,t1]);
+if(length(inputData.refinement_data(1).intensity) == length(handles.DATA_INTENSITY) && size(inputData.refinement_data,1) == handles.numBins)
+    handles.DATA = inputData.refinement_data;
+else
+    msgbox('Invalid Refinement File (# number of bins or data points do not match)')
+end
+disp('Data Loaded');
+guidata(hObject,handles);
+
+
+% --------------------------------------------------------------------
+function menu_analysis_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_analysis (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menu_strainpole_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_strainpole (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+waitfor(msgbox('Select the reference refinement data'));
+
+[t1,t2] = uigetfile('*.mat','Choose reference refinement data');
+
+if(~ischar(t1))
+    return
+end
+
+reference_refinement = load([t2,'\',t1]);
+if(size(reference_refinement.refinement_data,1)>1)
+    waitfor(msgbox('More than one set of data detected, please choose different refinement data'));
+    return
+end
+
+hkls = zeros(3,length(reference_refinement.refinement_data(1).theta_fit));
+theta0_Ifits = reference_refinement.refinement_data(1).theta_fit; %using
+% different method, instead of the fitted thetas, using the overall fitted
+% lattice parameter and using the plane spacing equation with the parameter
+% to get the thetas for the hkls
+
+for(i=1:size(hkls,2))
+    temp = num2str(reference_refinement.refinement_data(1).maxes(i,5));
+    hkls(:,i) = [str2double(temp(1));str2double(temp(2));str2double(temp(3))];
+    %note hkls ordered highest to lowest (eg 211 to 100) due to refinement
+    %data format. It matches theta values from refinement data read in
+    %order.
+end
+
+s=sprintf('Reference Refinement Info\n# of Hkls = %d\n\nTheta Fits:\n',size(hkls,2));
+for(i=1:size(hkls,2))
+    s = [s,sprintf('(%d,%d,%d) = %7.4f°\n',hkls(1,i),hkls(2,i),hkls(3,i),theta0_Ifits(i))];
+end
+waitfor(msgbox(s));
+waitfor(msgbox('Select the refinement data for each image'));
+
+
+[t1,t2] = uigetfile('*.mat','Choose reference refinement data','Multiselect','On');
+
+if(isempty(t1))
+    return
+end
+
+theta_fits=[];
+imageCount = length(t1);
+binCount = 0;
+for(i=1:length(t1))
+    t = load([t2,t1{i}]);
+    disp(['Loaded ',[t2,t1{i}]]);
+    if(i==1)
+        theta_fits = zeros(length(t1),size(hkls,2),size(t.refinement_data,1));
+        binCount = size(t.refinement_data,1);
+    end
+    for(j=1:size(t.refinement_data,1))
+        for(k=1:size(t.refinement_data(j).maxes,1))
+            for(l=1:size(hkls,2))
+                if(strcmp([num2str(hkls(1,l)),num2str(hkls(2,l)),num2str(hkls(3,l))],num2str(t.refinement_data(j).maxes(k,5))))
+                    theta_fits(i,l,j) = t.refinement_data(j).theta_fit(k);
+                end
+            end
+        end
+    end
+end
+
+assignin('base','theta_fits',theta_fits);
+waitfor(msgbox(sprintf('Number of image refinement data loaded: %d\nNumber of Bins per Image: %d',imageCount,binCount)));
+
+%strain calculations for all images
+strains = zeros(size(theta_fits));
+
+popval = get(handles.popupmenu_type,'Value');
+type = '';
+switch(popval)
+    case(1)
+        type = 'cubic';
+    case(2)
+        type = 'hexagonal';
+    case(3)
+        type = 'trigonal';
+    case(4)
+        type = 'tetragonal';
+    case(5)
+        type = 'orthorhombic';
+    case(6)    
+        type = 'monoclinic';
+end
+    
+[~,thetas0] = PlaneSpacings(reference_refinement.refinement_data(1).a,type,hkls,keV2Angstrom(handles.ENERGY));
+% the initParms in the example code are predefined. Operating under the
+% assumption that it represents the a0 value found from fitting (averaged, summed etc.)
+
+%note thetas0, not bragg angle, need to multiply by 2
+thetas0=thetas0*2;
+
+for(i=1:length(t1))
+    for(j=1:size(t.refinement_data,1))
+        for(k=1:size(t.refinement_data(j).maxes,1))
+            for(l=1:size(hkls,2))
+                if(theta_fits(i,l,j)==0)
+                    strains(i,l,j) = Inf;
+                else
+                    strains(i,l,j) = sind(thetas0(l)./2)./sind(theta_fits(i,l,j)./2) - 1;
+                end
+            end
+        end
+    end
+end
+
+%generates scatterign vectors for sp figure
+scVectors = {};
+
+
+%These parameters need to be accounted for
+eta = 0:360/72:360;
+ome = -62.5:5:62.5;
+
+for(i=1:size(hkls,2))
+    scVectors = {GeneratePFScattVectors(thetas0,eta,ome,hkls(:,i))};
+end
+assignin('base','strains',strains);
+

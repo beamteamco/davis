@@ -121,7 +121,7 @@ if(handles.loaded == 1)
         
         if(~isempty(handles.DATA_FIT) && get(handles.checkbox_fits,'Value')==1)
             hold on;
-            for(i=1:length(handles.DATA_FIT))
+            for(i=1:size(handles.DATA_FIT,1))
                 plot(handles.axes_plot,handles.DATA_FIT{i,1},handles.DATA_FIT{i,3},'.k');                
             end
             set(handles.axes_plot,'NextPlot','replacechildren');
