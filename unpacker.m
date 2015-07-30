@@ -384,6 +384,8 @@ else
     set(handles.checkbox_split,'Enable','on');
 end
 
+guidata(hObject,handles);
+
 
 function edit_fnumber_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_fnumber (see GCBO)
@@ -500,6 +502,7 @@ if(handles.fileExist==1 && handles.pathExist==1)
     end
     
 end
+guidata(hObject,handles);
 
 % --- Executes on button press in button_close.
 function button_close_Callback(hObject, eventdata, handles)
