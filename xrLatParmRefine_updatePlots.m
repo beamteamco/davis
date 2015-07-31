@@ -49,7 +49,7 @@ if(handles.loaded == 1)
 
         if(get(handles.pushbutton_toolFndmax,'UserData')==1)
             hold on;
-            disp(handles.gdlines(1,1))
+%             disp(handles.gdlines(1,1))
             ys=get(handles.axes_plot,'YLim');
             plot(handles.axes_plot,[handles.gdlines(1,1),handles.gdlines(1,1)],ys,'r');
 
@@ -110,7 +110,7 @@ if(handles.loaded == 1)
         if(~isempty(handles.DATA_INITSPACING) && get(handles.checkbox_initspacing,'Value')==1)
            hold on;
            ys=get(handles.axes_plot,'YLim');
-           disp(ys);
+%            disp(ys);
            for(i=1:length(handles.DATA_INITSPACING))
                 plot(handles.axes_plot,[handles.DATA_INITSPACING(i),handles.DATA_INITSPACING(i)],ys,':b');
            end

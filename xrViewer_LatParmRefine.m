@@ -22,7 +22,7 @@ function varargout = xrViewer_LatParmRefine(varargin)
 
 % Edit the above text to modify the response to help xrViewer_LatParmRefine
 
-% Last Modified by GUIDE v2.5 28-Jul-2015 13:42:45
+% Last Modified by GUIDE v2.5 30-Jul-2015 18:58:09
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -67,9 +67,9 @@ handles.filename = '';
 handles.DATA_INITSPACING = [];
 handles.numBins = 0;
 handles.binNum = str2double(get(handles.edit_binNum,'String'));
-
+handles.Override = 0;
 handles.DATA_FIT = {};
-
+handles.hkl_mask = [];
 handles.maxParams = struct(...
     'Imin',0,...
     'Imax',3*10^4,...
@@ -238,6 +238,7 @@ if(length(t1)~=1)
     handles.maxParams.SpacingMin = 0.1;
 
     disp('Data Loaded\n')
+    set(handles.label_filepath,'String',['Input Filepath: ',tempFilename]);
     xrLatParmRefine_updatePlots(hObject,handles);
     
 end
@@ -1357,6 +1358,53 @@ end
 
 temp = handles.binNum;
 
+popval = get(handles.popupmenu_type,'Value');
+type = '';
+switch(popval)
+    case(1)
+        type = 'cubic';
+    case(2)
+        type = 'hexagonal';
+    case(3)
+        type = 'trigonal';
+    case(4)
+        type = 'tetragonal';
+    case(5)
+        type = 'orthorhombic';
+    case(6)    
+        type = 'monoclinic';
+end
+    
+hkls = getHKLs(type);
+
+s=sprintf('Lattice Type = %s\n\nhkl''s=\n\n',type);
+for(jj=1:size(hkls,2))
+    s = [s,sprintf('%d%d%d\n',hkls(1,jj),hkls(2,jj),hkls(3,jj))];
+end
+s = [s,sprintf('\nType in the hkls considered for max finding as csv (eg 100,101,200)')];
+prompt = {s};
+
+if(handles.Override == 0)
+    title = 'Choose hkl''s for Max Finding';
+    def = {'100,110,200,211'};
+
+    answer = inputdlg(prompt,title,1,def);
+
+    inputHkls = str2num(answer{1});
+
+    hkl_mask = zeros(1,size(hkls,2));
+
+    for(i=1:length(inputHkls))
+        for(jj=1:size(hkls,2))
+            if(inputHkls(i)==str2double([num2str(hkls(1,jj)),num2str(hkls(2,jj)),num2str(hkls(3,jj))]))
+                hkl_mask(jj)=1;
+            end
+        end
+    end
+%     disp(hkl_mask);
+else
+    hkl_mask = handles.hkl_mask;
+end
 for(i=1:handles.numBins)
     handles.binNum = i;
 
@@ -1378,34 +1426,15 @@ for(i=1:handles.numBins)
         set(handles.uitable_maxes,'Data',{});
     end
 
-    handles.DATA_FIT = handles.DATA(handles.binNum).data_fit;
-
-    popval = get(handles.popupmenu_type,'Value');
-    type = '';
-    switch(popval)
-        case(1)
-            type = 'cubic';
-        case(2)
-            type = 'hexagonal';
-        case(3)
-            type = 'trigonal';
-        case(4)
-            type = 'tetragonal';
-        case(5)
-            type = 'orthorhombic';
-        case(6)    
-            type = 'monoclinic';
-    end
-
-    hkls = getHKLs(type);
+    handles.DATA_FIT = handles.DATA(handles.binNum).data_fit;       
 
     if(handles.loaded==1)
         z=1;
         handles.DATA_MAXES = [,];
         pass = 0;
 
-        disp('Maximum Calculation Parameters');
-        disp(handles.maxParams);
+%         disp('Maximum Calculation Parameters');
+%         disp(handles.maxParams);
 
         h=6.626*10^-34;
         c=3*10^8;
@@ -1415,16 +1444,79 @@ for(i=1:handles.numBins)
 
         %Redo indexperspace, nonlinaer relationship
         indexPerSpace = length(handles.DATA_DSPACING)/abs(handles.DATA_2THETA(1)-handles.DATA_2THETA(end));
-        disp(['indexperspace = ',num2str(indexPerSpace)])
+%         disp(['indexperspace = ',num2str(indexPerSpace)])
 
-        for(i=2:length(handles.DATA_DSPACING)-1)        
-            if((handles.DATA_INTENSITY(i) >= handles.maxParams.Imin) &&...
-                    (handles.DATA_INTENSITY(i) <= handles.maxParams.Imax) &&...
-                    (handles.DATA_INTENSITY(i) > handles.DATA_INTENSITY(i-1)) &&...
-                    (handles.DATA_INTENSITY(i) > handles.DATA_INTENSITY(i+1)))
+        %finds all local maximums, check to see if there is another within
+        %mindistance, if so chooses the largest of them
+% %         for(i=2:length(handles.DATA_DSPACING)-1)        
+% %             if((handles.DATA_INTENSITY(i) >= handles.maxParams.Imin) &&...
+% %                     (handles.DATA_INTENSITY(i) <= handles.maxParams.Imax) &&...
+% %                     (handles.DATA_INTENSITY(i) > handles.DATA_INTENSITY(i-1)) &&...
+% %                     (handles.DATA_INTENSITY(i) > handles.DATA_INTENSITY(i+1)))
+% % 
+% %                 iLeft = floor(indexPerSpace*2*180*asin((lambda*(1e10))/(2*(handles.DATA_DSPACING(i)+handles.maxParams.SpacingMin)))/pi());
+% %                 iRight = floor(indexPerSpace*2*180*asin((lambda*(1e10))/(2*(handles.DATA_DSPACING(i)-handles.maxParams.SpacingMin)))/pi());
+% % 
+% %                 if(iRight>length(handles.DATA_INTENSITY))
+% %                     iRight=length(handles.DATA_INTENSITY);
+% %                 end
+% %                 if(iLeft<1)
+% %                     iLeft=1;
+% %                 end
+% % 
+% %                 for(j=iLeft:iRight)
+% %                     if(handles.DATA_INTENSITY(i) >= handles.DATA_INTENSITY(j))
+% %                         pass=1;
+% %                     else
+% %                         pass=0;
+% %                         break;
+% %                     end
+% %                 end
+% % 
+% %                 if(pass==1)
+% %                     indexx=1;
+% %                     handles.DATA_MAXES(z,1:2) = [handles.DATA_DSPACING(i),handles.DATA_INTENSITY(i)];
+% %                     handles.DATA_MAXES(z,3) = 0.25; 
+% %                     handles.DATA_MAXES(z,4) = handles.DATA_2THETA(i);
+% %                     for(k=1:length(handles.DATA_INITSPACING))
+% %                         if(abs(handles.DATA_DSPACING(i)-handles.DATA_INITSPACING(k))<abs(handles.DATA_DSPACING(i)-handles.DATA_INITSPACING(indexx)))
+% %                             indexx = k;
+% %                         end                
+% %                     end
+% %                     handles.DATA_MAXES(z,5) = str2double([num2str(hkls(1,indexx)),num2str(hkls(2,indexx)),num2str(hkls(3,indexx))]);
+% %                     z=z+1;
+% %                 end 
+% % 
+% %             end    
+% %         end
 
-                iLeft = floor(indexPerSpace*2*180*asin((lambda*(1e10))/(2*(handles.DATA_DSPACING(i)+handles.maxParams.SpacingMin)))/pi());
-                iRight = floor(indexPerSpace*2*180*asin((lambda*(1e10))/(2*(handles.DATA_DSPACING(i)-handles.maxParams.SpacingMin)))/pi());
+        %new peak finding algorithm, looks within a certain range of the
+        %inital hkl spacings, chooses the max within that range as the
+        %vlaue for that specific hkl
+        
+        %only choosing the first 4 hkls, can be changed
+        
+        ct1=1;
+        for(ii=1:size(hkls,2))  
+            if(hkl_mask(ii)==1)
+                for(j=1:length(handles.DATA_INTENSITY))
+                    if(handles.DATA_DSPACING(j) < handles.DATA_INITSPACING(ii)+handles.maxParams.SpacingMin)
+                        iLeft = j;
+                        break
+                    else
+                        iLeft = j;
+                    end
+                end
+                for(j=iLeft:length(handles.DATA_INTENSITY))
+                    if(handles.DATA_DSPACING(j) < handles.DATA_INITSPACING(ii)-handles.maxParams.SpacingMin)
+                        iRight = j;
+                        break
+                    else
+                        iRight = j;
+                    end
+                end
+    %             iLeft = find(handles.DATA_DSPACING>handles.DATA_INITSPACING(i)+handles.maxParams.SpacingMin);
+    %             iRight = find(handles.DATA_DSPACING<handles.DATA_INITSPACING(i)-handles.maxParams.SpacingMin);
 
                 if(iRight>length(handles.DATA_INTENSITY))
                     iRight=length(handles.DATA_INTENSITY);
@@ -1433,32 +1525,25 @@ for(i=1:handles.numBins)
                     iLeft=1;
                 end
 
-                for(j=iLeft:iRight)
-                    if(handles.DATA_INTENSITY(i) >= handles.DATA_INTENSITY(j))
-                        pass=1;
-                    else
-                        pass=0;
-                        break;
+    %             disp(sprintf('iLeft for #%d is %d, dspace=%d',i,iLeft,handles.DATA_DSPACING(iLeft)));
+    %             disp(sprintf('iRight for #%d is %d, dspace=%d',i,iRight,handles.DATA_DSPACING(iRight)));
+                for(j=iLeft+1:iRight-1)
+                    if(j==iLeft+1)
+                        maxIndex = j;
                     end
+                    if(handles.DATA_INTENSITY(j) > handles.DATA_INTENSITY(maxIndex))
+                        maxIndex = j;
+                    end
+                    handles.DATA_MAXES(ct1,1:2) = [handles.DATA_DSPACING(maxIndex),handles.DATA_INTENSITY(maxIndex)];
+                    handles.DATA_MAXES(ct1,3) = 0.15; 
+                    handles.DATA_MAXES(ct1,4) = handles.DATA_2THETA(maxIndex);
+                    handles.DATA_MAXES(ct1,5) = str2double([num2str(hkls(1,ii)),num2str(hkls(2,ii)),num2str(hkls(3,ii))]);
                 end
-
-                if(pass==1)
-                    indexx=1;
-                    handles.DATA_MAXES(z,1:2) = [handles.DATA_DSPACING(i),handles.DATA_INTENSITY(i)];
-                    handles.DATA_MAXES(z,3) = 0.25; 
-                    handles.DATA_MAXES(z,4) = handles.DATA_2THETA(i);
-                    for(k=1:length(handles.DATA_INITSPACING))
-                        if(abs(handles.DATA_DSPACING(i)-handles.DATA_INITSPACING(k))<abs(handles.DATA_DSPACING(i)-handles.DATA_INITSPACING(indexx)))
-                            indexx = k;
-                        end                
-                    end
-                    handles.DATA_MAXES(z,5) = str2double([num2str(hkls(1,indexx)),num2str(hkls(2,indexx)),num2str(hkls(3,indexx))]);
-                    z=z+1;
-                end 
-
-            end    
+                ct1=ct1+1;
+            end
         end
-
+        
+        %sorts the maxes in order of d-spacing
         handles.DATA_MAXES = orderSort(handles.DATA_MAXES,'a',1);
         if(~isempty(handles.DATA_MAXES))
             set(handles.uitable_maxes,'Data',[num2cell(handles.DATA_MAXES(:,1)),num2cell(handles.DATA_MAXES(:,2)),num2cell(handles.DATA_MAXES(:,3)),num2cell(handles.DATA_MAXES(:,5))]);
@@ -1466,7 +1551,7 @@ for(i=1:handles.numBins)
             set(handles.uitable_maxes,'Data',{});
         end
 
-        disp('Maximum Calculation Complete')
+        disp(sprintf('Maximum Calculation Complete for Bin #%d',i));
         set(handles.text_maxnum,'String',['Max # = ',num2str(size(handles.DATA_MAXES,1))]);       
 
         handles.DATA(handles.binNum).maxes = handles.DATA_MAXES;
@@ -1524,8 +1609,8 @@ for(i=1:handles.numBins)
     end
 end
 
-options = optimset('TolFun',1e-10,'Display','notify','MaxFunEvals',20000,'MaxIter',2000);
-
+options = optimset('TolFun',1e-10,'Display','notify','MaxFunEvals',20000,'MaxIter',2000,'Display','off');
+options2 = optimset('Display','off');
 tt = get(handles.popupmenu_dist,'Value');
 switch(tt)
     case(1)
@@ -1795,7 +1880,7 @@ end
 
 %note thetas0, not bragg angle, need to multiply by 2
 thetas0=thetas0*2;
-
+assignin('base','thetas0',thetas0);
 for(i=1:length(t1))
     for(j=1:size(t.refinement_data,1))
         for(k=1:size(t.refinement_data(j).maxes,1))
@@ -1809,17 +1894,208 @@ for(i=1:length(t1))
         end
     end
 end
-
+assignin('base','strains',strains);
 %generates scatterign vectors for sp figure
 scVectors = {};
 
 
 %These parameters need to be accounted for
-eta = 0:360/72:360;
-ome = -62.5:5:62.5;
+eta = 0:360/72:360-360/72;
+ome = -62.5:5:62.5; %test ome, has 26 5-degree intervals, (28 image set with 2 darks images)
 
-for(i=1:size(hkls,2))
-    scVectors = {GeneratePFScattVectors(thetas0,eta,ome,hkls(:,i))};
+
+% # of refinemnt files read (one for each iamge) needs to correspond to
+% each omega inteval. Checks for that and displays mismatch
+if(length(t1)~=length(ome))
+    disp('Data Mismatch. Not enough image refinmenet data to correspond to chosen omgea intervals');
 end
-assignin('base','strains',strains);
 
+%generates the scatter vectors for each hkl (based off of the reference
+%hkls)
+for(i=1:size(hkls,2))
+    scVectors(i) = {GeneratePFScattVectors(thetas0(i),ome,eta)};
+end
+assignin('base','scatters',scVectors);
+
+
+
+%creates the strains formatted for the PlotSPF function. This is
+%accomplished by concatenating the strains into one long column vector. The
+%spf strains are stored in a cell array, each cell hold the set of spf
+%strains for each hkl
+
+strains_spf = {};
+for(i=1:size(hkls,2))
+    for(j=1:length(t1))
+        if(j==1)
+        	strains_spf(i) = {reshape(strains(j,i,:),1,size(strains,3))'};
+        else
+            strains_spf(i) = {[strains_spf{i};reshape(strains(j,i,:),1,size(strains,3))']};
+        end
+    end
+end
+assignin('base','strains_spf',strains_spf);
+
+%test plot, needs more data first
+for(i=1:size(hkls,2))
+    figure
+    PlotSPF(scVectors{1}',strains_spf{1});
+    title(sprintf('SPF - (%d,%d,%d)',hkls(1,i),hkls(2,i),hkls(3,i)));
+end
+
+
+% --------------------------------------------------------------------
+function menu_batchcalc_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_batchcalc (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+[t1,t2] = uigetfile('*.mat','Select Image Bin Data Files','Multiselect','On');
+
+if(isempty(t1))
+    return
+end
+
+
+initParms = [str2double(get(handles.edit_parmA,'String')),str2double(get(handles.edit_parmB,'String')),str2double(get(handles.edit_parmC,'String'))];
+popval = get(handles.popupmenu_type,'Value');
+
+type = '';
+switch(popval)
+    case(1)
+        type = 'cubic';
+    case(2)
+        type = 'hexagonal';
+    case(3)
+        type = 'trigonal';
+    case(4)
+        type = 'tetragonal';
+    case(5)
+        type = 'orthorhombic';
+    case(6)    
+        type = 'monoclinic';
+end
+    
+%PREPARES HKL DATA FOR PEAK FINDING
+hkls = getHKLs(type);
+    
+s=sprintf('Lattice Type = %s\n\nhkl''s=\n\n',type);
+for(jj=1:size(hkls,2))
+    s = [s,sprintf('%d%d%d\n',hkls(1,jj),hkls(2,jj),hkls(3,jj))];
+end
+s = [s,sprintf('\nType in the hkls considered for max finding as csv (eg 100,101,200)')];
+prompt = {s};
+
+title = 'Choose hkl''s for Max Finding';
+def = {'100,110,200,211'};
+answer = inputdlg(prompt,title,1,def);
+
+inputHkls = str2num(answer{1});
+
+handles.hkl_mask = zeros(1,size(hkls,2));
+
+for(i=1:length(inputHkls))
+    for(jj=1:size(hkls,2))
+        if(inputHkls(i)==str2double([num2str(hkls(1,jj)),num2str(hkls(2,jj)),num2str(hkls(3,jj))]))
+            handles.hkl_mask(jj)=1;
+        end
+    end
+end 
+    
+%ASKS FOR FILE STEM FOR SAVING REFINEMENT DATA FILES
+prompt = {'Choose File Stem'};
+def = {'refinementData_'};
+answer = inputdlg(prompt,title,1,def);
+
+filestem = answer{1};
+
+%PERFORMS PEAK FINDING AND FITTING FOR EACH DATA FILE
+for(ttt=1:length(t1))
+    
+    %LOADS THE FILE DATA
+    tempFilename = [t2,t1{ttt}];        
+    x = load(tempFilename);
+
+    set(handles.label_filepath,'String',['Input Filepath: ',tempFilename]);
+    set(handles.edit_filename,'String',tempFilename);
+    set(handles.edit_binNum,'String','1');
+    
+    handles.DATA_INTENSITY = [];
+    handles.DATA_DSPACING = [];
+    handles.DATA_2THETA = [];
+
+    handles.DATA_MAXES = [,];
+    handles.binDATA = [];
+
+    handles.DATA_INITSPACING = [];
+    handles.numBins = 0;
+    handles.DATA_FIT = {};
+       
+
+    set(handles.edit_filename,'String',tempFilename);
+    set(handles.edit_binNum,'String','1');
+
+    handles.numBins = size(x.binData,2)/3;  
+    
+    handles.DATA = struct(...
+    'intensity',cell(handles.numBins,1),...
+    'dspacing',cell(handles.numBins,1),...
+    'theta2',cell(handles.numBins,1),...
+    'energy',cell2mat(x.binData(end,1)),...
+    'maxes',cell(handles.numBins,1),...
+    'a',[],...
+    'b',[],...
+    'c',[],...
+    'resid',[],...
+    'theta_fit',[],...
+    'dspacing_fit',[],...
+    'data_fit',cell(handles.numBins,1));
+
+%     assignin('base','hdata',handles.DATA);
+    disp(handles.numBins);
+    handles.binNum = str2double(get(handles.edit_binNum,'String'));
+
+    set(handles.text_numBins,'String',['# of bins = ',num2str(handles.numBins)]);
+    
+    handles.binDATA = cell2mat(x.binData(2:end-2,:));
+
+    for(i=1:handles.numBins)
+        handles.DATA(i).intensity = cell2mat(x.binData(2:end-2,3*(i-1)+1));
+        handles.DATA(i).theta2 = cell2mat(x.binData(2:end-2,3*(i-1)+2));
+        handles.DATA(i).dspacing = cell2mat(x.binData(2:end-2,3*(i-1)+3));
+    end
+%     assignin('base','hdata2',handles.DATA);
+    handles.DATA_INTENSITY = cell2mat(x.binData(2:end-2,3*(handles.binNum-1)+1));    
+    handles.DATA_2THETA = cell2mat(x.binData(2:end-2,3*(handles.binNum-1)+2));
+    handles.DATA_DSPACING = cell2mat(x.binData(2:end-2,3*(handles.binNum-1)+3));
+    handles.ENERGY = cell2mat(x.binData(end,1));
+%     disp(handles.ENERGY);
+    set(handles.edit_energy,'String',num2str(handles.ENERGY));
+    handles.loaded = 1;
+    
+    handles.DATA_INITSPACING = [];    
+
+    [handles.DATA_INITSPACING,~] = PlaneSpacings(initParms,type,getHKLs(type),keV2Angstrom(handles.ENERGY));
+
+    handles.maxParams.Imin = 0.15*max(handles.DATA_INTENSITY);
+    handles.maxParams.Imax = max(handles.DATA_INTENSITY);
+    handles.maxParams.SpacingMin = 0.1;
+    handles.Override = 1;        
+    
+    guidata(hObject,handles);
+    handles = guidata(hObject);
+    
+    %PERFORMS GLOBAL MAX CALC
+    menu_calcmaxes_Callback(hObject, eventdata, handles);
+    handles = guidata(hObject);
+    
+    %PERFORMS FITS
+    menu_calcfitparams_Callback(hObject, eventdata, handles)
+    handles = guidata(hObject);    
+    
+    %SAVES DATA (USING USER DEFINED FILE STEM)
+    refinement_data = handles.DATA;
+    save([t2,filestem,num2str(ttt),'.mat'],'refinement_data');
+    disp(['File ',[t2,filestem,num2str(ttt),'.mat'],' Saved Successfully']);
+    guidata(hObject,handles);
+end

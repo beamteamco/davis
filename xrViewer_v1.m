@@ -1794,6 +1794,7 @@ for(j=1:handles.count)
             binData = [binData,[{[num2str(angle+sp2*i-sp2/2),'° to ',num2str(angle+sp2*i+sp2/2),'°','intensity'],'2theta ','d-spacing'};num2cell(im),num2cell(thetas'),num2cell(d_spacing');...
                 {'beam energy','',''};...
             num2cell(str2double(get(handles.edit_energy,'String'))),{'',''}]];
+            disp(sprintf('Saving bin #%d',i));
         end
 
         filename = [t1,'\',[answer{1},'_Image',num2str(j),'.mat']];
