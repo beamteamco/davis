@@ -1789,12 +1789,12 @@ for(j=1:handles.count)
             sp2 = 360/bins;
             params = [angle+sp2*i, sp2/2, radiusU, cX, cY, radiusL];
             [im,thetas,d_spacing] = radialCompute(handles,image,0,params,0);
-            disp(['Bin #',num2str(i+1),' completed'])
+%             disp(['Bin #',num2str(i+1),' completed'])
 
             binData = [binData,[{[num2str(angle+sp2*i-sp2/2),'° to ',num2str(angle+sp2*i+sp2/2),'°','intensity'],'2theta ','d-spacing'};num2cell(im),num2cell(thetas'),num2cell(d_spacing');...
                 {'beam energy','',''};...
             num2cell(str2double(get(handles.edit_energy,'String'))),{'',''}]];
-            disp(sprintf('Saving bin #%d',i));
+%             disp(sprintf('Saving bin #%d',(i+1)));
         end
 
         filename = [t1,'\',[answer{1},'_Image',num2str(j),'.mat']];

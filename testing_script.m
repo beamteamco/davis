@@ -1,64 +1,34 @@
-x = [1,0,0]';
-jj=1;
-th = 20;
-eta = 0:360/72:360;
-eta = eta;
-ome = -62.5:5:62.5;
+
+tilt = -28.6;
+cx = 1024;
+cy = 1024;
+
+% Rx =    [1,     0,               0,...
+%         0,      cosd(tilt),    -sind(theta),...
+%         0,      sind(tilt),    cosd(theta)];
+        
+    
+testImage = ReadInGE('C:\Users\Andy Petersen\Documents\MATLAB\Xray\2013_12_NiTi1Hf\Sample6_5_00006.tiff');
 
 figure
-quiver3(0,0,0,x(1),x(2),x(3),'g');
-hold on
+imagesc(testImage,[0,max(max(testImage))]);
 
-R_th    = [ ...
-        cosd(th(jj)) 0 sind(th(jj)); ...
-        0 1 0; ...
-        -sind(th(jj)) 0 cosd(th(jj)); ...
-        ];
-    q0  = R_th*x;
-    
-q_eta   = zeros(3,length(eta));
+%tilt only
 
-quiver3(0,0,0,q0(1),q0(2),q0(3),'b');
+%j=x index;
+%i = y index;
 
-for i = 1:length(eta)
-    %z-axis rotation
-    R_eta   = [ ...
-        cosd(eta(i)) -sind(eta(i)) 0; ...
-        sind(eta(i)) cosd(eta(i)) 0; ...
-        0 0 1]';
-    q_eta(:,i)  = R_eta*q0;
-    quiver3(0,0,0,q_eta(1,i),q_eta(2,i),q_eta(3,i),'r');
-end
+newIm = zeros(4096,4096);
 
-for i = 1:1:length(ome)
-        %y-axis rotation
-        R_ome   = [ ...
-            cosd(ome(i)) 0 sind(ome(i)); ...
-            0 1 0; ...
-            -sind(ome(i)) 0 cosd(ome(i)); ...
-            ];
-        q_ome	= R_ome*q_eta;
-
-        if(i==13)
-            for(oo=1:size(q_eta,2))
-                if(oo==1)
-                    quiver3(0,0,0,2*q_ome(1,oo),2*q_ome(2,oo),2*q_ome(3,oo),'k')
-                else
-                    quiver3(0,0,0,q_ome(1,oo),q_ome(2,oo),q_ome(3,oo),'k')
-                end
-            end
-        end
+for(i=1:size(testImage,2))
+    for(j=1:size(testImage,1))
+        nx = j-cx;
+        ny = (cy-i)/sind(90+tilt);
         
-        ini = 1 + length(eta) * (i - 1);
-        fin = length(eta) * i;
-        q_pf(ini:fin,:,jj)  = q_ome';
-
+        npx = nx+cx;
+        npy = ny+1024;
+        newIm(ceil(npx)+1024,ceil(npy)+1024) = testImage(i,j);
+    end
 end
-    
 
-R_th2    = [cosd(th(jj)), 0, sind(th(jj)); ...
-        0, 1, 0; ...
-        sind(th(jj)), 0, cosd(th(jj))];
-q02  = 2*R_th2*x;
-   
-quiver3(0,0,0,q02(1),q02(2),q02(3),'b');
+imagesc(newIm,[0,max(max(newIm))]);

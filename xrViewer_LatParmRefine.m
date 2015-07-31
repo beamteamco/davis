@@ -1064,6 +1064,8 @@ function button_calcParam_Callback(hObject, eventdata, handles)
 if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
 
     options = optimset('TolFun',1e-10,'Display','notify','MaxFunEvals',20000,'MaxIter',2000);
+%     options2 = optimset('Di);
+    
     handles.DATA_FIT = {};
 
     tt = get(handles.popupmenu_dist,'Value');
@@ -1100,6 +1102,10 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
         xDataD = handles.DATA_DSPACING(indice2:indice1,1);
         yData = handles.DATA_INTENSITY(indice2:indice1,1);
 
+        assignin('base','xdata',xDataT);
+        assignin('base','ydata',yData);
+        
+        disp(indice2);
 
         p0 = [abs(handles.DATA_MAXES(i,2))/12;...
             0.05;...
@@ -1108,13 +1114,14 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
             0;
             mean(yData)];
 
+        assignin('base','p0',p0);
     %     p0 = [513726.373445702;...
     %             .0813;...
     %             .1539;...
     %             11.5327;...
     %             mean(yData)]
     %         
-        [p, resnorm,resid,exitf]  = lsqcurvefit(@(p0,xDataT)pfunc(p0,xDataT,type), p0, xDataT, yData);
+        [p, resnorm,resid,exitf]  = lsqcurvefit(@(p0,xDataT)pfunc(p0,xDataT,type), p0, xDataT, yData,[0,0,0,0,0,0],[Inf,Inf,Inf,Inf,Inf,Inf]);
 
         handles.DATA_FIT{i,1}=xDataD;
         handles.DATA_FIT{i,2}=xDataT;
@@ -1405,6 +1412,8 @@ if(handles.Override == 0)
 else
     hkl_mask = handles.hkl_mask;
 end
+
+tic
 for(i=1:handles.numBins)
     handles.binNum = i;
 
@@ -1561,7 +1570,7 @@ for(i=1:handles.numBins)
         msgbox('Please load data before calculations');
     end
 end
-
+disp(sprintf('Elapsed Time = %5.2fs',toc));
 
 handles.binNum = temp;
 
@@ -1673,7 +1682,7 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
         %             11.5327;...
         %             mean(yData)]
         %         
-            [p, resnorm,resid,exitf]  = lsqcurvefit(@(p0,xDataT)pfunc(p0,xDataT,type), p0, xDataT, yData);
+            [p, resnorm,resid,exitf]  = lsqcurvefit(@(p0,xDataT)pfunc(p0,xDataT,type), p0, xDataT, yData,[0,0,0,0,0,0],[Inf,Inf,Inf,Inf,Inf,Inf],options2);
 
             handles.DATA_FIT{i,1}=xDataD;
             handles.DATA_FIT{i,2}=xDataT;
@@ -1699,7 +1708,7 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
             hkls(i,:) = [str2double(tstring(1)),str2double(tstring(2)),str2double(tstring(3))];
         end
 
-        disp(hkls)
+%         disp(hkls)
         % disp(a0)
 
         a0out = [0 0 0];
@@ -1715,7 +1724,7 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
         assignin('base','a0resid',a0resid);
 
         filename = [handles.filename(1:end-4),'_LarParmRefine.mat'];
-        disp(filename)
+        disp(sprintf('Fit and Parameter Refinement Complete for Bin #%d Complete',ii));
 
         %data to save to the parameter file
 
@@ -2010,8 +2019,10 @@ answer = inputdlg(prompt,title,1,def);
 filestem = answer{1};
 
 %PERFORMS PEAK FINDING AND FITTING FOR EACH DATA FILE
+tprogress = 0;
+hbar = waitbar(tprogress,'');
 for(ttt=1:length(t1))
-    
+    waitbar(tprogress,hbar,sprintf('Processing Bin Data for Image #%d',ttt));
     %LOADS THE FILE DATA
     tempFilename = [t2,t1{ttt}];        
     x = load(tempFilename);
@@ -2097,5 +2108,8 @@ for(ttt=1:length(t1))
     refinement_data = handles.DATA;
     save([t2,filestem,num2str(ttt),'.mat'],'refinement_data');
     disp(['File ',[t2,filestem,num2str(ttt),'.mat'],' Saved Successfully']);
+    tprogress = ttt/length(t1);
     guidata(hObject,handles);
 end
+
+delete(hbar);
