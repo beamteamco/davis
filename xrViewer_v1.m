@@ -463,7 +463,12 @@ if(length(handles.directory)~=1)
 
     for i=1:handles.count
     %     disp([handles.directory,'\',handles.imageNames{i,1}])
-        handles.images(i) = {ReadInGE([handles.directory,'\',handles.imageNames{i}])};       
+    try
+        handles.images(i) = {imread([handles.directory,'\',handles.imageNames{i}],'tiff')};
+    catch
+        disp('Image not tiff image, opening as data');
+        handles.images(i) = {ReadInGE([handles.directory,'\',handles.imageNames{i}])};     
+    end
         tempp = handles.images(i);
 %         assignin('base','assignedImage',tempp)
         disp([handles.directory,'\',handles.imageNames{i}])

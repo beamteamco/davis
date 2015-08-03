@@ -1849,13 +1849,9 @@ for(i=1:length(t1))
         theta_fits = zeros(length(t1),size(hkls,2),size(t.refinement_data,1));
         binCount = size(t.refinement_data,1);
     end
-    for(j=1:size(t.refinement_data,1))
-        for(k=1:size(t.refinement_data(j).maxes,1))
-            for(l=1:size(hkls,2))
-                if(strcmp([num2str(hkls(1,l)),num2str(hkls(2,l)),num2str(hkls(3,l))],num2str(t.refinement_data(j).maxes(k,5))))
-                    theta_fits(i,l,j) = t.refinement_data(j).theta_fit(k);
-                end
-            end
+    for(j=1:size(hkls,2))
+        for(k=1:size(t.refinement_data,1))
+            theta_fits(i,j,k) = t.refinement_data(k).theta_fit(j);
         end
     end
 end
@@ -1890,23 +1886,31 @@ end
 %note thetas0, not bragg angle, need to multiply by 2
 thetas0=thetas0*2;
 assignin('base','thetas0',thetas0);
+% for(i=1:length(t1))
+%     for(j=1:size(t.refinement_data,1))
+%             for(l=1:size(hkls,2))
+%                 denom = sind(theta_fits(i,l,j)./2);
+%                 if(denom==0)
+%                     strains(i,l,j) = Inf;
+%                 else
+%                     strains(i,l,j) = sind(thetas0(l)./2)./denom - 1;
+%                 end
+%             end
+%     end
+% end
 for(i=1:length(t1))
-    for(j=1:size(t.refinement_data,1))
-        for(k=1:size(t.refinement_data(j).maxes,1))
-            for(l=1:size(hkls,2))
-                if(theta_fits(i,l,j)==0)
-                    strains(i,l,j) = Inf;
-                else
-                    strains(i,l,j) = sind(thetas0(l)./2)./sind(theta_fits(i,l,j)./2) - 1;
-                end
+    for(j=1:size(hkls,2))
+        for(k=1:size(t.refinement_data,1))
+            denom = sind(theta_fits(i,j,k)./2);
+            if(denom==0)
+                strains(i,j,k) = Inf;
+            else
+                strains(i,j,k) = sind(thetas0(j)./2)./denom - 1;
             end
         end
     end
 end
 assignin('base','strains',strains);
-%generates scatterign vectors for sp figure
-scVectors = {};
-
 
 %These parameters need to be accounted for
 eta = 0:360/72:360-360/72;
@@ -1921,6 +1925,10 @@ end
 
 %generates the scatter vectors for each hkl (based off of the reference
 %hkls)
+
+%generates scatterign vectors for sp figure
+scVectors = {};
+
 for(i=1:size(hkls,2))
     scVectors(i) = {GeneratePFScattVectors(thetas0(i),ome,eta)};
 end
@@ -2021,6 +2029,7 @@ filestem = answer{1};
 %PERFORMS PEAK FINDING AND FITTING FOR EACH DATA FILE
 tprogress = 0;
 hbar = waitbar(tprogress,'');
+set(hbar,'WindowStyle','modal');
 for(ttt=1:length(t1))
     waitbar(tprogress,hbar,sprintf('Processing Bin Data for Image #%d',ttt));
     %LOADS THE FILE DATA
@@ -2113,3 +2122,5 @@ for(ttt=1:length(t1))
 end
 
 delete(hbar);
+
+disp('BATCH CALCULATIONS COMPLETE');
