@@ -1824,6 +1824,7 @@ for(i=1:size(hkls,2))
     %data format. It matches theta values from refinement data read in
     %order.
 end
+assignin('base','hkls',hkls);
 
 s=sprintf('Reference Refinement Info\n# of Hkls = %d\n\nTheta Fits:\n',size(hkls,2));
 for(i=1:size(hkls,2))
@@ -1846,12 +1847,12 @@ for(i=1:length(t1))
     t = load([t2,t1{i}]);
     disp(['Loaded ',[t2,t1{i}]]);
     if(i==1)
-        theta_fits = zeros(length(t1),size(hkls,2),size(t.refinement_data,1));
+        theta_fits = zeros(size(t.refinement_data,1),size(hkls,2),length(t1));
         binCount = size(t.refinement_data,1);
     end
     for(j=1:size(hkls,2))
         for(k=1:size(t.refinement_data,1))
-            theta_fits(i,j,k) = t.refinement_data(k).theta_fit(j);
+            theta_fits(k,j,i) = t.refinement_data(k).theta_fit(j);
         end
     end
 end
@@ -1860,7 +1861,6 @@ assignin('base','theta_fits',theta_fits);
 waitfor(msgbox(sprintf('Number of image refinement data loaded: %d\nNumber of Bins per Image: %d',imageCount,binCount)));
 
 %strain calculations for all images
-strains = zeros(size(theta_fits));
 
 popval = get(handles.popupmenu_type,'Value');
 type = '';
@@ -1879,6 +1879,7 @@ switch(popval)
         type = 'monoclinic';
 end
     
+handles.ENERGY = reference_refinement.refinement_data(1).energy;
 [~,thetas0] = PlaneSpacings(reference_refinement.refinement_data(1).a,type,hkls,keV2Angstrom(handles.ENERGY));
 % the initParms in the example code are predefined. Operating under the
 % assumption that it represents the a0 value found from fitting (averaged, summed etc.)
@@ -1898,14 +1899,17 @@ assignin('base','thetas0',thetas0);
 %             end
 %     end
 % end
+
+strains = zeros(size(theta_fits));
+
 for(i=1:length(t1))
     for(j=1:size(hkls,2))
         for(k=1:size(t.refinement_data,1))
-            denom = sind(theta_fits(i,j,k)./2);
+            denom = sind(theta_fits(k,j,i)./2);
             if(denom==0)
-                strains(i,j,k) = Inf;
+                strains(k,j,i) = Inf;
             else
-                strains(i,j,k) = sind(thetas0(j)./2)./denom - 1;
+                strains(k,j,i) = sind(thetas0(j)./2)./denom - 1;
             end
         end
     end
@@ -1913,10 +1917,16 @@ end
 assignin('base','strains',strains);
 
 %These parameters need to be accounted for
-eta = 0:360/72:360-360/72;
-ome = -62.5:5:62.5; %test ome, has 26 5-degree intervals, (28 image set with 2 darks images)
+eta = 0:360/binCount:360-360/binCount;
 
+%ome = -62.5:5:62.5; %test ome, has 26 5-degree intervals, (28 image set with 2 darks images)
 
+titlep = 'Choose Omega Range';
+prompt = {'Omega Upper Limit','Omega Lower Limit'};
+def = {'62.5','-62.5'};
+answer = inputdlg(prompt,titlep,1,def);
+
+ome = str2double(answer{2}):(str2double(answer{1})-str2double(answer{2}))/(length(t1)-1):str2double(answer{1});
 % # of refinemnt files read (one for each iamge) needs to correspond to
 % each omega inteval. Checks for that and displays mismatch
 if(length(t1)~=length(ome))
@@ -1942,12 +1952,21 @@ assignin('base','scatters',scVectors);
 %strains for each hkl
 
 strains_spf = {};
+% for(i=1:size(hkls,2))
+%     for(j=1:length(t1))
+%         if(j==1)
+%         	strains_spf(i) = {reshape(strains(j,i,:),1,size(strains,3))'};
+%         else
+%             strains_spf(i) = {[strains_spf{i};reshape(strains(j,i,:),1,size(strains,3))']};
+%         end
+%     end
+% end
 for(i=1:size(hkls,2))
     for(j=1:length(t1))
         if(j==1)
-        	strains_spf(i) = {reshape(strains(j,i,:),1,size(strains,3))'};
+        	strains_spf(i) = {strains(:,i,j)};
         else
-            strains_spf(i) = {[strains_spf{i};reshape(strains(j,i,:),1,size(strains,3))']};
+            strains_spf(i) = {[strains_spf{i};strains(:,i,j)]};
         end
     end
 end

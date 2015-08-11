@@ -117,15 +117,19 @@ if strcmpi(opts.ShowSurf, 'on')
         'FontSize', 16, 'FontWeight', 'bold')
 end
 
+tt=0;
 for i = 1:1:NumDataPts
-    if PFptColor(i) > 0 & PFptColor(i) <= ncmap
+    if PFptColor(i) > 0 && PFptColor(i) <= ncmap
         plot3(...
             PFpts(i,1), PFpts(i,2), PFpts(i,3), ...
             'Marker', 'o', ...
             'MarkerFaceColor', cmap(PFptColor(i), :), ...
             'MarkerEdgeColor', cmap(PFptColor(i), :), ...
             'MarkerSize', 5);
-        hold on
+        if(tt==0)
+            hold on;
+            tt=1;
+        end
     end
 end
 axis equal off
