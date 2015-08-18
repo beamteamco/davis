@@ -51,10 +51,10 @@ NumDataPts  = NumDataPts1;
 
 if NumDataPts ~= 0
     % define DataRange
-%     DataMax = max(Data);
-%     DataMin = min(Data);
-    DataMax = max(abs(Data));
-    DataMin = -max(Data);
+    DataMax = max(Data);
+    DataMin = min(Data);
+%     DataMax = max(abs(Data));
+%     DataMin = -max(Data);
     if DataMax > 0
         DataMax = DataMax + 0.01*DataMax;
     else
@@ -86,7 +86,7 @@ opts    = OptArgs(optcell, varargin);
 
 % define colors
 ncmap   = 256;
-cmap    = hot(ncmap);
+cmap    = jet(ncmap);
 dData   = opts.DataRange(2) - opts.DataRange(1);
 PFptColor   = round((ncmap-1)*(Data - opts.DataRange(1))./dData) + 1;
 
@@ -141,6 +141,7 @@ title(opts.Title, ...
 view(opts.ViewAngle);
 
 cb  = colorbar;
+colormap jet;
 set(cb, 'FontSize', 16, 'FontWeight', 'bold', ...
     'Location', 'SouthOutside')
 caxis(opts.DataRange);

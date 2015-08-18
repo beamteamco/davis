@@ -6,7 +6,7 @@ end
 
 tiltPlane = -28.0315;
 inPlane   = -0.4975;
-inPlane   = -45;
+inPlane   = -35;
 cx = 1024;
 cy = 1024;
 
@@ -16,7 +16,7 @@ cy = 1024;
    
 %Uses rodruiges rotation formula
 
-
+%rotation axes unit vector (using fit2d convention for definition)
 w = [cosd(90+tiltPlane);
     sind(90+tiltPlane);
     0];
@@ -29,43 +29,46 @@ I = [1 0 0;
     0 1 0;
     0 0 1];
 
-
-testThetas = 0:5:360;
-R_test = zeros(3,3,length(testThetas));
-
-for(i=1:length(testThetas))
-    R_test(:,:,i) = I + sind(testThetas(i))*w_ + (1-cosd(testThetas(i)))*(w_)^2;
-end
-
-R = I + sind(inPlane)*w_ + (1-cosd(inPlane))*(w_)^2;
+R = I + sind(-inPlane)*w_ + (1-cosd(-inPlane))*(w_)^2;
 
 
-x = [1;0;0];
+% % % testThetas = 0:5:360;
+% % % R_test = zeros(3,3,length(testThetas));
+% % % 
+% % % for(i=1:length(testThetas))
+% % %     R_test(:,:,i) = I + sind(testThetas(i))*w_ + (1-cosd(testThetas(i)))*(w_)^2;
+% % % end
+% % % 
 
-% x_test = zeros(3,1,length(testThetas));
-% 
-% for(i=1:size(x_test,3))
-%     x_test(:,:,i) = R_test(:,:,i)*x;
-%     if(i==1)
-%         disp(R_test(:,:,i));
-%         disp(x);
-%         disp(R_test(:,:,i)*x);
-%     end
-% end
 
-x2 = R*x;
+% % 
+% % x = [1;0;0];
+% % 
+% % % x_test = zeros(3,1,length(testThetas));
+% % % 
+% % % for(i=1:size(x_test,3))
+% % %     x_test(:,:,i) = R_test(:,:,i)*x;
+% % %     if(i==1)
+% % %         disp(R_test(:,:,i));
+% % %         disp(x);
+% % %         disp(R_test(:,:,i)*x);
+% % %     end
+% % % end
+% % 
+% % x2 = R*x;
+% % 
+% % figure        
+% % quiver3(0,0,0, w(1),w(2),w(3),'r');
+% % hold on
+% % quiver3(0,0,0, x(1),x(2),x(3),'b');
+% % quiver3(0,0,0, x2(1),x2(2),x2(3),'g');
+% % 
+% % xlim([-1,1]);
+% % ylim([-1,1]);
+% % zlim([-1,1]);
 
-figure        
-quiver3(0,0,0, w(1),w(2),w(3),'r');
-hold on
-quiver3(0,0,0, x(1),x(2),x(3),'b');
-quiver3(0,0,0, x2(1),x2(2),x2(3),'g');
-
-xlim([-1,1]);
-ylim([-1,1]);
-zlim([-1,1]);
-testImage = ReadInGE('C:\Users\Andy Petersen\Documents\MATLAB\Xray\2013_12_NiTi1Hf\Sample6_5_00006.tiff');
-
+% testImage = ReadInGE('C:\Users\Andy Petersen\Documents\MATLAB\Xray\2013_12_NiTi1Hf\Sample6_5_00006.tiff'); % lab comp
+testImage =double(imread('C:\Users\Andy\Documents\2013_12_NiTi1Hf\Sample6_5_00006.tiff','tiff')); %home comp
 
 pixelVectors = zeros(4,2048*2048);
 
@@ -75,10 +78,15 @@ for(i=1:2048)
     end
 end
 
+%converts the vector coordinates to pixel space coordinates (-y up, +x
+%right, asjusting for image center x and y)
 pixelVectors_rotated = ((R*pixelVectors(1:3,:)).*([1;-1;1]*ones(1,size(pixelVectors,2)))) + ([cx;cy;0]*ones(1,size(pixelVectors,2)));
+
+%adds in each vectors coresponding intensity value to the matrix
 pixelVectors_rotated = [pixelVectors_rotated;pixelVectors(4,:)];
 
-newIM = zeros(2048,2048);
+newIM = ones(2048,2048)*NaN; %using NaN for ease of missing value checking
+
 for(i=1:2048)
     for(j=1:2048)        
 %         for(k=1:size(pixelVectors_rotated,2))                        
@@ -87,6 +95,10 @@ for(i=1:2048)
 %                 index((2048*(i-1)+ j))=k;
 %             end
 %         end
+
+%utilises ceil method (floor would work as well), will be imprecise for rotation angles larger than 60
+%degrees (acos(0.5)=60 degrees). This causes an overrite of values and an
+%interpolation method is necesary to accommidate for that
         if(ceil(pixelVectors_rotated(1,2048*(i-1)+j)) > 0 && ceil(pixelVectors_rotated(1,2048*(i-1)+j)) < 2049 &&...
                 ceil(pixelVectors_rotated(2,2048*(i-1)+j)) > 0 && ceil(pixelVectors_rotated(2,2048*(i-1)+j)) < 2049)
             newIM(ceil(pixelVectors_rotated(2,2048*(i-1)+j)),ceil(pixelVectors_rotated(1,2048*(i-1)+j))) = pixelVectors_rotated(4,2048*(i-1)+j);

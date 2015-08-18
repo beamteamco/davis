@@ -1850,13 +1850,13 @@ for(i=1:length(t1))
         theta_fits = zeros(size(t.refinement_data,1),size(hkls,2),length(t1));
         binCount = size(t.refinement_data,1);
     end
-%     for(j=1:size(hkls,2))
-%         for(k=1:size(t.refinement_data,1))
-%             theta_fits(k,j,i) = t.refinement_data(k).theta_fit(j);
-%         end
-%     end
-    for(k=1:size(t.refinement_data,1))
+    for(j=1:size(hkls,2))
+        for(k=1:size(t.refinement_data,1))
+            theta_fits(k,j,i) = t.refinement_data(k).theta_fit(j);
+        end
     end
+%     for(k=1:size(t.refinement_data,1))
+%     end
 end
 
 assignin('base','theta_fits',theta_fits);

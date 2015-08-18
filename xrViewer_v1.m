@@ -22,7 +22,7 @@ function varargout = xrViewer_v1(varargin)
 
 % Edit the above text to modify the response to help xrViewer_v1
 
-% Last Modified by GUIDE v2.5 28-Jul-2015 09:23:27
+% Last Modified by GUIDE v2.5 14-Aug-2015 22:21:44
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -464,12 +464,12 @@ if(length(handles.directory)~=1)
     for i=1:handles.count
     %     disp([handles.directory,'\',handles.imageNames{i,1}])
     try
-        handles.images(i) = {imread([handles.directory,'\',handles.imageNames{i}],'tiff')};
+        handles.images(i) = {double(imread([handles.directory,'\',handles.imageNames{i}],'tiff'))};
     catch
         disp('Image not tiff image, opening as data');
         handles.images(i) = {ReadInGE([handles.directory,'\',handles.imageNames{i}])};     
     end
-        tempp = handles.images(i);
+%         tempp = handles.images(i);
 %         assignin('base','assignedImage',tempp)
         disp([handles.directory,'\',handles.imageNames{i}])
     end
@@ -505,6 +505,7 @@ if(length(handles.directory)~=1)
 %     assignin('base','assignedImages',handles.images)
     %plots the figures
     updatePlots(hObject,handles);
+    assignin('base','loaded_images',handles.images);
 end
 guidata(hObject,handles)
 
@@ -1808,3 +1809,92 @@ for(j=1:handles.count)
     end
 end
 disp('All Images Binned');
+
+
+% --------------------------------------------------------------------
+function menu_tilt_correction_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_tilt_correction (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if(handles.loaded==1)
+    prompt = {'Rotation angle of tilting plane ()','Angle of detector tilt in plane ()','Center X','Center Y'};
+    dlg_title = 'Detector Tilt Correction Parameters';
+    num_lines = 1;
+    def = {'-28.0315','-0.4975',get(handles.edit_x,'String'),get(handles.edit_y,'String')};
+    answer = inputdlg(prompt,dlg_title,num_lines,def);
+    
+    if(isempty(answer))
+        return
+    end
+    
+    tpa = str2double(answer{1});
+    dtpa = str2double(answer{2});
+    cx = str2double(answer{3});
+    cy = str2double(answer{4});
+    
+    outdir = uigetdir('Choose Ouput Save Directory');
+    
+    if(~ischar(outdir))
+        return
+    end
+%     imagesc(TiltPlaneCorrection(image,-28,-15,1024,1024));
+
+    fname_new = cell(handles.count,1);
+    
+    for(i=1:handles.count)
+        fname = [outdir,'\',handles.imageNames{i}];
+        fname_new(i) = {[fname(1:end-5),'.corrected.tiff']};
+        
+        disp(sprintf('\nCalculating Correction for Image #%d',i));
+        tic
+        im = handles.images{i};
+        imc = TiltPlaneCorrection(im,tpa,dtpa,cx,cy);
+        
+%         if(i==7)
+%             assignin('base','imrea',handles.images{1});
+%             assignin('base','im',im);
+%             assignin('base','imc',imc);
+%         end
+
+        disp(sprintf('Correction for Image #%d Complete. Elapsed Time=%5.2f',i,toc));
+        
+        ofstream = fopen(fname_new{i}, 'w');
+        fwrite(ofstream, imc,'uint16');
+        fclose(ofstream);
+        
+%         imwrite(imc,fname_new{i},'tiff');
+        disp(sprintf('Image #%d Saved',i));
+    end
+    disp('Image Correction Complete');
+else
+    msgbox('No Images Loaded');
+end
+
+
+% --------------------------------------------------------------------
+function menu_options_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_options (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menu_auto_intensity_scale_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_auto_intensity_scale (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.scale_left_U = max(max(handles.images{handles.imageIndexL}));
+handles.scale_left_L = min(min(handles.images{handles.imageIndexL}));
+handles.scale_left_L =0;
+set(handles.edit_scaleLeftU,'String',num2str(handles.scale_left_U));
+set(handles.edit_scaleLeftL,'String',num2str(handles.scale_left_L));
+
+handles.scale_right_U = max(max(handles.images{handles.imageIndexR}));
+handles.scale_right_L = min(min(handles.images{handles.imageIndexR}));
+handles.scale_right_L = 0;
+set(handles.edit_scaleRightU,'String',num2str(handles.scale_right_U));
+set(handles.edit_scaleRightL,'String',num2str(handles.scale_right_L));
+
+updatePlots(hObject,handles);
+guidata(hObject,handles)
