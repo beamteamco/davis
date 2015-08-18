@@ -21,21 +21,21 @@ if(isLine == 1)
     theta2 = atan(r*pxLength/dist)*180/pi();
 %     disp(theta2)
     lambda = h * c / ( 1000 * beamEnergy * e );
-    d_spacing = lambda / 2 ./ sin((theta2*pi()/180) / 2) * 1e10;
+%     d_spacing = lambda / 2 ./ sin((theta2*pi()/180) / 2) * 1e10;
+    d_spacing = 1e10 * lambda./(2.*sin((theta2/2).*pi()./180));
     
-    pxX = floor(r*cosd(f_params(1)))+f_params(4);
-    pxY = floor(-r*sind(f_params(1)))+f_params(5);
+    pxX = ceil(r*cosd(f_params(1)))+f_params(4);
+    pxY = ceil(-r*sind(f_params(1)))+(2048-f_params(5));
     
     
 %     disp(pxX)
 %     disp(pxY)
     for(i=1:length(r))
-        if(floor(pxX(i)) > 2048 || floor(pxX(i)) < 1 || floor(pxY(i)) > 2048 || floor(pxY(i)) < 1)
-            output(i) = -1;
+        if(pxX(i) > 2048 || pxX(i) < 1 || pxY(i) > 2048 || pxY(i) < 1)
+            output(i) = 0;
         else
             output(i) = inputImage(pxY(i),pxX(i));
-        end
-        
+        end        
     end
     
     area = sum(dR.*output); %units = intensity*pixel
@@ -73,7 +73,8 @@ else
     thetas2 = atan(r*pxLength/dist)*180/pi();
     
     lambda = h * c / ( 1000 * beamEnergy * e );
-    d_spacings = lambda / 2 ./ sin((thetas2*pi()/180) / 2) * 1e10;
+%     d_spacings = lambda / 2 ./ sin((thetas2*pi()/180) / 2) * 1e10;
+    d_spacings = 1e10 * lambda./(2.*sin((thetas2/2).*pi()./180));
 %     d_spacings(d_spacings==Inf())=0;
 %     disp(d_spacings)
     
@@ -92,8 +93,8 @@ else
 %     end
 
 %linear algebra method, much much faster
-    pxX = floor(r'*cosd(thetas)+f_params(4));
-    pxY = floor(-r'*sind(thetas)+f_params(5));
+    pxX = ceil(r'*cosd(thetas)+f_params(4));
+    pxY = ceil(-r'*sind(thetas)+(2048-f_params(5)));
 %     wb = waitbar(0,'Calculating...');
 %     tot = length(r)*length(thetas);
 

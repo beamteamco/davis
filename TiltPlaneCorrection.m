@@ -22,24 +22,29 @@ I = [1 0 0;
     0 0 1];
 
 R = I + sind(detectortTiltPlaneAngle)*w_ + (1-cosd(detectortTiltPlaneAngle))*(w_)^2;
+Rz = I + sind(-detectortTiltPlaneAngle)*w_ + (1-cosd(-detectortTiltPlaneAngle))*(w_)^2;
 
 pixelVectors = zeros(4,imRows*imCols);
+zVals = zeros(3,imRows*imCols);
 
 for(i=1:imRows)
     for(j=1:imCols)
-         pixelVectors(:,2048*(i-1)+j) = [j-cx;-i+cy;0;im(i,j)];
+         pixelVectors(:,2048*(i-1)+j) = [j-cx;-i+(imRows-cy);0;im(i,j)];
+         zVals(:,2048*(i-1)+j) = [j-cx;-i+(imRows-cy);0];
     end
 end
 
 %converts the vector coordinates to pixel space coordinates (-y up, +x
 %right, asjusting for image center x and y)
+zVals_rotated = ((Rz*zVals).*([1;-1;1]*ones(1,size(zVals,2)))) + ([cx;cy;0]*ones(1,size(zVals,2)));
+
+pixelVectors(3,:) = zVals_rotated(3,:);
 pixelVectors_rotated = ((R*pixelVectors(1:3,:)).*([1;-1;1]*ones(1,size(pixelVectors,2)))) + ([cx;cy;0]*ones(1,size(pixelVectors,2)));
 
 %adds in each vectors coresponding intensity value to the matrix
 pixelVectors_rotated = [pixelVectors_rotated;pixelVectors(4,:)];
 
 outputImage = zeros(imRows,imCols); %using NaN for ease of missing value checking
-
 for(i=1:imRows)
     for(j=1:imCols)
         

@@ -122,7 +122,8 @@ if(handles.loaded == 1)
         spread = str2double(get(handles.edit_spread,'String'));
         bins = str2double(get(handles.edit_bins,'String'));
         cX = str2double(get(handles.edit_x,'String'));
-        cY = str2double(get(handles.edit_y,'String'));
+%         cY = str2double(get(handles.edit_y,'String'));
+        cY = 2048 - str2double(get(handles.edit_y,'String'));
 
         %shows the radial options
         hold on
