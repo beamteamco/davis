@@ -1826,7 +1826,7 @@ for(i=1:size(hkls,2))
 end
 assignin('base','hkls',hkls);
 
-s=sprintf('Reference Refinement Info\n# of Hkls = %d\n\nTheta Fits:\n',size(hkls,2));
+s=sprintf('Reference Refinement Info\n# of Hkls = %d\nLattice Parameter: %6.5f\nTheta Fits:\n',size(hkls,2),reference_refinement.refinement_data(1).a);
 for(i=1:size(hkls,2))
     s = [s,sprintf('(%d,%d,%d) = %7.4f°\n',hkls(1,i),hkls(2,i),hkls(3,i),theta0_Ifits(i))];
 end
@@ -1974,10 +1974,20 @@ for(i=1:size(hkls,2))
 end
 assignin('base','strains_spf',strains_spf);
 
-%test plot, needs more data first
+means = zeros(1,size(hkls,2));
+stdevs = zeros(1,size(hkls,2));
+medians = zeros(1,size(hkls,2));
+
+for(i=1:size(hkls,2))
+    means(i) = mean(strains_spf{i});
+    medians(i) = median(strains_spf{i});
+    stdevs(i) = std(strains_spf{i});
+end
+
+%plots SPF
 for(i=1:size(hkls,2))
     figure
-    PlotSPF(scVectors{1}',strains_spf{1});
+    PlotSPF(scVectors{i}',strains_spf{i});
     title(sprintf('SPF - (%d,%d,%d)',hkls(1,i),hkls(2,i),hkls(3,i)));
 end
 
@@ -2050,9 +2060,10 @@ filestem = answer{1};
 %PERFORMS PEAK FINDING AND FITTING FOR EACH DATA FILE
 tprogress = 0;
 hbar = waitbar(tprogress,'');
-set(hbar,'WindowStyle','modal');
+% set(hbar,'WindowStyle','modal');
 for(ttt=1:length(t1))
     waitbar(tprogress,hbar,sprintf('Processing Bin Data for Image #%d',ttt));
+    figure(hbar);
     %LOADS THE FILE DATA
     tempFilename = [t2,t1{ttt}];        
     x = load(tempFilename);

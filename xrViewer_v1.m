@@ -22,7 +22,7 @@ function varargout = xrViewer_v1(varargin)
 
 % Edit the above text to modify the response to help xrViewer_v1
 
-% Last Modified by GUIDE v2.5 14-Aug-2015 22:21:44
+% Last Modified by GUIDE v2.5 19-Aug-2015 16:35:39
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -506,6 +506,7 @@ if(length(handles.directory)~=1)
     %plots the figures
     updatePlots(hObject,handles);
     assignin('base','loaded_images',handles.images);
+    set(handles.label_directory,'String',['Current Directory = ',handles.directory,'\']);
 end
 guidata(hObject,handles)
 
@@ -1866,7 +1867,7 @@ if(handles.loaded==1)
 %         imwrite(imc,fname_new{i},'tiff');
         disp(sprintf('Image #%d Saved',i));
     end
-    disp('Image Correction Complete');
+    disp('IMAGE CORRECTION COMPLETE');
 else
     msgbox('No Images Loaded');
 end
