@@ -2000,12 +2000,10 @@ if(choice==1)
     for(i=1:size(hkls,2))
         figure
         PlotSPF(scVectors{i}',strains_spf{i},'DataRange',[-.005,.005]);
-        title(sprintf('SPF - (%d,%d,%d)',hkls(1,i),hkls(2,i),hkls(3,i)));      
-        
-       
-        ch = gca;
-        set(ch,'CameraUpVector',[0,1,0]);
-        
+        title(sprintf('SPF - (%d,%d,%d)',hkls(1,i),hkls(2,i),hkls(3,i)));        
+        ff  = gcf;
+        set(camera
+        ch = get(ff,'Children');
         assignin('base','children',ch);
     end
 end
