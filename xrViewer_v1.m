@@ -74,6 +74,7 @@ handles.darkNum = [0];
 handles.loaded = 0;
 handles.count=0;
 handles.directory = '1';
+
 %bin related handles
 handles.binDir = [];
 handles.binStem = 'binout_';
@@ -98,8 +99,6 @@ set(handles.axes_left,'UIContextMenu',handles.plot_men1);
 set(handles.axes_right,'UIContextMenu',handles.plot_men2);
 set(handles.axes_spec,'UIContextMenu',handles.plot_men3);
 set(gcf,'name','XRay Viewer and Data Analyzer')
-% set(handles.button_conv1,'String','pc <-> 2\theta');
-
 
 sIM = imread('no_image.png');
 
@@ -120,6 +119,7 @@ set(handles.axes_spec,'Units','normalized');
 set(handles.axes_spec,'OuterPosition',[0,0,1,1]);
 axes(handles.axes_spec)
 axis square        
+
 % Update handles structure
 guidata(hObject, handles);
 % setUIProperties_xrViewer(hObject,handles)

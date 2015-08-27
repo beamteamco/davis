@@ -13,7 +13,7 @@ pxLength = 10^(-6) * str2double(get(handles.edit_pixel,'String'));
 dist = str2double(get(handles.edit_distance,'String'))/1000;
 % disp(dist)
 if(isLine == 1)
-    %calculates 1d plot along radial line at specific theta
+    %calculates 1D plot along radial line at specific theta
     dR = handles.dR;
 
     r=f_params(6):dR:f_params(3);

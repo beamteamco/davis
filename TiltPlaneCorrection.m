@@ -5,7 +5,7 @@ im = double(im);
 imRows = size(im,1);
 imCols = size(im,2);
 
-%rotation axes unit vector (using fit2d tilt plane convention for definition)
+%rotation axis unit vector (using fit2d tilt plane convention for rotations axis definition)
 w = [cosd(90+tiltPlaneAngle);
     sind(90+tiltPlaneAngle);
     0];
@@ -35,14 +35,11 @@ end
 pixelVectors_rotated = ((R*pixelVectors).*([1;-1;1]*ones(1,size(pixelVectors,2)))) + ([cx;cy;0]*ones(1,size(pixelVectors,2)));
 
 outputImage = zeros(imRows,imCols);
-
-tics = 0;
-
-interpedValues = zeros(1,imRows*imCols);
 interpedValues = interp2(im,pixelVectors_rotated(1,:),pixelVectors_rotated(2,:));
-
 disp(sprintf('\tInterpolation Complete'));
 
+%Assigns intensity values to final output image, areas clipped or missing
+%contains the value of 0
 for(i=1:imRows)
     for(j=1:imCols)
         tics = imRows*(i-1)+j;
@@ -55,21 +52,4 @@ for(i=1:imRows)
     end
 end
 
-% delete h;
-
-% for(i=1:imRows)
-%     for(j=1:imCols)        
-%         
-%         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%CEIL METHOD%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
-%         cvalR = ceil(pixelVectors_rotated(2,imRows*(i-1)+j));
-%         cvalC = ceil(pixelVectors_rotated(1,imRows*(i-1)+j));
-%         
-%         if(cvalC > 0 && cvalC < imCols+1 &&...
-%                 cvalR > 0 && cvalR < imRows+1)
-%             outputImage(cvalR,cvalC) = pixelVectors_rotated(4,imRows*(i-1)+j);
-%         end
-%    
-%     end
-% end
 disp(sprintf('\tCorrection Elapsed Time = %5.3f',toc));
