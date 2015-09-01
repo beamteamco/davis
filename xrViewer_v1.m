@@ -10,7 +10,7 @@ function varargout = xrViewer_v1(varargin)
 %      given property value pairs. Unrecognized properties are passed via
 %      varargin to xrViewer_v1_OpeningFcn.  This calling syntax produces a
 %      warning when there is an existing singleton*.
-%
+%4
 %      XRVIEWER_V1('CALLBACK') and XRVIEWER_V1('CALLBACK',hObject,...) call the
 %      local function named CALLBACK in XRVIEWER_V1.M with the given input
 %      arguments.
@@ -464,14 +464,14 @@ if(length(handles.directory)~=1)
     for i=1:handles.count
     %     disp([handles.directory,'\',handles.imageNames{i,1}])
     try
-        handles.images(i) = {double(imread([handles.directory,'\',handles.imageNames{i}],'tiff'))};
+        handles.images(i) = {double(imread(fullfile(handles.directory,handles.imageNames{i}),'tiff'))};
     catch
         disp('Image not tiff image, opening as data');
-        handles.images(i) = {ReadInGE([handles.directory,'\',handles.imageNames{i}])};     
+        handles.images(i) = {ReadInGE(fullfile(handles.directory,handles.imageNames{i}))};     
     end
 %         tempp = handles.images(i);
 %         assignin('base','assignedImage',tempp)
-        disp([handles.directory,'\',handles.imageNames{i}])
+        disp(fullfile(handles.directory,handles.imageNames{i}))
     end
 
     if(handles.loaded==0)

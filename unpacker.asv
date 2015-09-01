@@ -456,10 +456,10 @@ if(handles.fileExist==1 && handles.pathExist==1)
                 data = fread(ifstream,[handles.rows handles.cols],format);
                 
                 if(get(handles.checkbox_split,'Value')==1)
-                ofilename = fullfile(handles.ofilepath,[handles.stem1,num2str(j,['%0',num2str(handles.digits1),'.0f']),...
-        handles.stem2,num2str(k,['%0',num2str(handles.digits2),'.0f']),'.tiff']);
+                ofilename = fullfile(handles.ofilepath,'\',handles.stem1,num2str(j,['%0',num2str(handles.digits1),'.0f']),...
+        handles.stem2,num2str(k,['%0',num2str(handles.digits2),'.0f']),'.tiff'];
                 else
-                    ofilename = fullfile(handles.ofilepath,[handles.stem1,num2str(i,['%0',num2str(handles.digits1),'.0f']),'.tiff']);
+                    ofilename = [handles.ofilepath,'\',handles.stem1,num2str(i,['%0',num2str(handles.digits1),'.0f']),'.tiff'];
                 end
     
                 ofstream = fopen(ofilename, 'w');
@@ -486,7 +486,7 @@ if(handles.fileExist==1 && handles.pathExist==1)
             ifstream = fopen(handles.ifilename,'r','n');
             fseek(ifstream,handles.header+(handles.fnumber-1)*handles.rows*handles.cols*mult,'bof');
             data = fread(ifstream,[handles.rows handles.cols],format);
-            ofilename = fullfile(handles.ofilepath,[handles.stem1,num2str((handles.fnumber-1),['%0',num2str(handles.digits1),'.0f']),'.tiff']);
+            ofilename = [handles.ofilepath,'\',handles.stem1,num2str((handles.fnumber-1),['%0',num2str(handles.digits1),'.0f']),'.tiff'];
             
             ofstream = fopen(ofilename, 'w');
             fwrite(ofstream, zeros(handles.rows+handles.cols,1), format(2:end));

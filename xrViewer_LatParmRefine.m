@@ -150,7 +150,7 @@ function pushbutton_openFile_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 [t1,t2] = uigetfile({'*.mat','MAT File (*.mat)'},'Select File');
-tempFilename = [t2,t1];
+tempFilename = fullfile(t2,t1);
 disp(tempFilename)
 handles.filename = t1;
 if(length(t1)~=1)
@@ -1333,8 +1333,8 @@ function menu_saveRefine_Callback(hObject, eventdata, handles)
 
 if(ischar(t1) && handles.loaded==1)
     refinement_data = handles.DATA;
-    save([t2,t1],'refinement_data');
-    disp(['File ',t2,t1,' Saved Successfully']);
+    save(fullfile(t2,t1),'refinement_data');
+    disp(['File ',fullfile(t2,t1),' Saved Successfully']);
 end
 
 
@@ -1776,7 +1776,7 @@ if(~ischar(t1))
     return
 end
 
-inputData = load([t2,t1]);
+inputData = load(fullfile(t2,t1));
 if(length(inputData.refinement_data(1).intensity) == length(handles.DATA_INTENSITY) && size(inputData.refinement_data,1) == handles.numBins)
     handles.DATA = inputData.refinement_data;
 else
@@ -1807,7 +1807,7 @@ if(~ischar(t1))
     return
 end
 
-reference_refinement = load([t2,'\',t1]);
+reference_refinement = load(fullfile(t2,t1));
 if(size(reference_refinement.refinement_data,1)>1)
     waitfor(msgbox('More than one set of data detected, please choose different refinement data'));
     return
@@ -1846,7 +1846,7 @@ theta_fits=[];
 imageCount = length(t1);
 binCount = 0;
 for(i=1:length(t1))
-    t = load([t2,t1{i}]);
+    t = load(fullfile(t2,t1{i}));
     disp(['Loaded ',[t2,t1{i}]]);
     if(i==1)
         theta_fits = zeros(size(t.refinement_data,1),size(hkls,2),length(t1));
@@ -2017,7 +2017,7 @@ if(choice == 2 || choice == 3)
         return
     end
     
-    E_hkls = load([t2,'\',t1]); %column vector format, in GPa
+    E_hkls = load(fullfile(t2,t1)); %column vector format, in GPa
     if(length(E_hkls) < size(hkls,2))
         msgbox('Not enough HKL Moduli for each hkl present in refinement data');
         return;
@@ -2208,8 +2208,8 @@ for(ttt=1:length(t1))
     
     %SAVES DATA (USING USER DEFINED FILE STEM)
     refinement_data = handles.DATA;
-    save([t2,filestem,num2str(ttt),'.mat'],'refinement_data');
-    disp(['File ',[t2,filestem,num2str(ttt),'.mat'],' Saved Successfully']);
+    save(fullfile(t2,filestem,num2str(ttt),'.mat'),'refinement_data');
+    disp(['File ',fullfile(t2,filestem,num2str(ttt),'.mat'),' Saved Successfully']);
     tprogress = ttt/length(t1);
     guidata(hObject,handles);
 end
