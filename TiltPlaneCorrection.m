@@ -21,7 +21,7 @@ I = [1 0 0;
 R = I + sind(detectortTiltPlaneAngle)*w_ + (1-cosd(detectortTiltPlaneAngle))*(w_)^2;
 
 %stores the vectors for the corrected image plane pixels (integer values)
-pixelVectors = zeros(3,imRows*imCol=);
+pixelVectors = zeros(3,imRows*imCols);
 
 %assigns coordinates to the pixel vectors
 for(i=1:imRows)

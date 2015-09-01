@@ -22,7 +22,7 @@ function varargout = unpacker(varargin)
 
 % Edit the above text to modify the response to help unpacker
 
-% Last Modified by GUIDE v2.5 09-Jun-2015 11:30:06
+% Last Modified by GUIDE v2.5 01-Sep-2015 11:39:44
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -87,7 +87,7 @@ guidata(hObject, handles);
 % UIWAIT makes unpacker wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
-
+    
 % --- Outputs from this function are returned to the command line.
 function varargout = unpacker_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
@@ -127,7 +127,7 @@ function button_open_Callback(hObject, eventdata, handles)
 % hObject    handle to button_open (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-[t1,t2] = uigetfile({'*.ge2','GE2 File (*.ge2)';'*.*','All Files (*.*)'},'Select File');
+[t1,t2] = uigetfile({'*.ge2','GE2 File (*.ge2)';'*.ge3','GE3 File (*.ge3)';'*.*','All Files (*.*)'},'Select File');
 handles.ifilename = fullfile(t2,t1);
 
 if(length(t1)~=1)
@@ -759,3 +759,62 @@ else
     handles.pathExist = 0;
 end
 guidata(hObject,handles);
+
+
+% --------------------------------------------------------------------
+function menu_options_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_options (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menu_batch_header_remove_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_batch_header_remove (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+[t1,t2] = uigetfile({'*.ge2';'*.ge3'},'Select Files','MultiSelect','on');
+
+if(~ischar(t2))
+    return;
+end
+
+if(~iscell(t1))
+    disp('Select more than one file please');
+    return;
+end
+
+switch(get(handles.popup_datatype,'Value'))
+        case(1)
+            mult = 1;
+            format = '*uint8';
+        case(2)
+            mult = 2;
+            format = '*uint16';
+        case(3)
+            mult = 4;
+            format = '*uint32';
+        case(4)
+            mult = 8;
+            format = '*uint64';
+        case(5)
+            mult = 1;
+            format = '*int8';
+        case(6)
+            mult = 2;
+            format = '*int16';
+        case(7)
+            mult = 4;
+            format = '*int32';
+        case(8)
+            mult = 8;
+            format = '*int64';
+end
+    
+    
+
+for(i=1:length(t1))
+    fo = fopen(fullfile(t2,t1),'r');
+    data = fread(ifstream,[handles.rows handles.cols],format);
+end
