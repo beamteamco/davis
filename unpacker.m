@@ -785,7 +785,7 @@ if(~iscell(t1))
     return;
 end
 
-s1 = uigetdir('Choose Output Directory')
+s1 = uigetdir('Choose Output Directory');
 if(~ischar(s1))
     return;
 end
@@ -823,9 +823,6 @@ for(i=1:size(t1,2))
     fseek(fIn,handles.header,'bof');
     data = fread(fIn,[handles.rows handles.cols],format);
         
-    if(i==5)
-        assignin('base','data',data);
-    end
     fOut = fopen(fullfile(s1,[answer{1},num2str(i,'%04.0f'),'.nhd']),'w');
     fwrite(fOut,data(:,:),format(2:end));
     
