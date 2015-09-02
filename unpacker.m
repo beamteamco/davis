@@ -775,46 +775,60 @@ function menu_batch_header_remove_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 [t1,t2] = uigetfile({'*.ge2';'*.ge3'},'Select Files','MultiSelect','on');
-
+assignin('base','t1',t1);
 if(~ischar(t2))
     return;
 end
 
 if(~iscell(t1))
-    disp('Select more than one file please');
+    disp('Select more than one file please, otherwise use standard unpacking');
+    return;
+end
+
+s1 = uigetdir('Choose Output Directory')
+if(~ischar(s1))
+    return;
+end
+
+title = 'Choose File Stem';
+prompt = {'Choose File Stem'};
+def = {'im_'};
+answer = inputdlg(prompt,title,1,def);
+
+if(isempty(answer))
     return;
 end
 
 switch(get(handles.popup_datatype,'Value'))
-        case(1)
-            mult = 1;
-            format = '*uint8';
-        case(2)
-            mult = 2;
-            format = '*uint16';
-        case(3)
-            mult = 4;
-            format = '*uint32';
-        case(4)
-            mult = 8;
-            format = '*uint64';
-        case(5)
-            mult = 1;
-            format = '*int8';
-        case(6)
-            mult = 2;
-            format = '*int16';
-        case(7)
-            mult = 4;
-            format = '*int32';
-        case(8)
-            mult = 8;
-            format = '*int64';
-end
-    
-    
+    case(1)
+        format = '*uint8';
+    case(2)
+        format = '*uint16';
+    case(3)
+        format = '*uint32';
+    case(4)
+        format = '*uint64';
+    case(5)
+        format = '*int8';
+    case(6)
+        format = '*int16';
+    case(7)
+        format = '*int32';
+    case(8)
+        format = '*int64';
+end   
 
-for(i=1:length(t1))
-    fo = fopen(fullfile(t2,t1),'r');
-    data = fread(ifstream,[handles.rows handles.cols],format);
+for(i=1:size(t1,2))
+    fIn = fopen(fullfile(t2,t1{i}),'r');
+    fseek(fIn,handles.header,'bof');
+    data = fread(fIn,[handles.rows handles.cols],format);
+        
+    fOut = fopen(fullfile(s1,[answer{1},num2str(i,'%04.0f'),'.nhd']),'w');
+    fwrite(fOut,data,format(2:end));
+    
+    fclose(fIn);
+    fclose(fOut);
+    disp(sprintf('File %d Complete',i));
 end
+
+disp('UNPACKING COMPLETE');

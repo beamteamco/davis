@@ -2112,6 +2112,7 @@ for(i=1:length(inputHkls))
 end 
     
 %ASKS FOR FILE STEM FOR SAVING REFINEMENT DATA FILES
+title = 'Choose File Stem';
 prompt = {'Choose File Stem'};
 def = {'refinementData_'};
 answer = inputdlg(prompt,title,1,def);
