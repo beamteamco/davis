@@ -467,7 +467,16 @@ if(length(handles.directory)~=1)
         handles.images(i) = {double(imread(fullfile(handles.directory,handles.imageNames{i}),'tiff'))};
     catch
         disp('Image not tiff image, opening as data');
-        handles.images(i) = {ReadInGE(fullfile(handles.directory,handles.imageNames{i}))};     
+        d = dir(fullfile(handles.directory,handles.imageNames{i}));
+        
+        if((d.bytes/(2048*2048)==2))
+            handles.images(i) = {ReadInGE(fullfile(handles.directory,handles.imageNames{i}))};
+        end
+        if((d.bytes/(2048*2048)==4))
+            ifs = fopen(fullfile(handles.directory,handles.imageNames{i}),'r');
+            handles.images(i) = {double(fread(ifs,[2048,2048],'*int32'))};
+            fclose(ifs);
+        end
     end
 %         tempp = handles.images(i);
 %         assignin('base','assignedImage',tempp)
