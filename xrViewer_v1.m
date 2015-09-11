@@ -150,8 +150,8 @@ function edit_indexL_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of edit_indexL as a double
 
 if(~isempty(str2double(get(handles.edit_indexL,'String'))))
-    if(handles.count == 0)
-        
+    if(handles.count == 0 || isempty(handles.count))
+        set(handles.edit_indexL,'String',num2str(handles.imageIndexL));
     elseif(str2double(get(handles.edit_indexL,'String'))>=handles.count)
         set(handles.edit_indexL,'String',num2str(handles.count-1));
         handles.imageIndexL = handles.count-1;
@@ -193,8 +193,8 @@ function edit_indexR_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of edit_indexR as a double
 
 if(~isempty(str2double(get(handles.edit_indexR,'String'))))
-    if(handles.count == 0)
-        
+    if(handles.count == 0 || isempty(handles.count))
+        set(handles.edit_indexR,'String',num2str(handles.imageIndexR));
     elseif(str2double(get(handles.edit_indexR,'String'))>=handles.count)
         set(handles.edit_indexR,'String',num2str(handles.count-1));
         handles.imageIndexR = handles.count-1;
