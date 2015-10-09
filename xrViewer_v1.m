@@ -514,7 +514,7 @@ if(length(handles.directory)~=1)
 %     assignin('base','assignedImages',handles.images)
     %plots the figures
     updatePlots(hObject,handles);
-    assignin('base','loaded_images',handles.images);
+    %assignin('base','loaded_images',handles.images);
     set(handles.label_directory,'String',['Current Directory = ',handles.directory,'\']);
 end
 guidata(hObject,handles)
@@ -1397,6 +1397,7 @@ function menu_binpath_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 handles.binDir = uigetdir('','Chose bin output file directory');
+set(handles.label_saveDir,'String',handles.binDir);
 if(length(handles.binDir)~=1)
     prompt = {'File Stem','File Extension'};
     def = {handles.binStem,handles.binExten};
