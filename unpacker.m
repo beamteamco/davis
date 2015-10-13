@@ -22,7 +22,7 @@ function varargout = unpacker(varargin)
 
 % Edit the above text to modify the response to help unpacker
 
-% Last Modified by GUIDE v2.5 01-Sep-2015 11:39:44
+% Last Modified by GUIDE v2.5 13-Oct-2015 13:28:23
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -832,3 +832,65 @@ for(i=1:size(t1,2))
 end
 
 disp('UNPACKING COMPLETE');
+
+
+% --------------------------------------------------------------------
+function menu_addheader_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_addheader (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+[t1,t2] = uigetfile('*.*','Select GE2/3 Files','Multiselect','On');
+
+if(~ischar(t1) && ~iscell(t1))
+    return
+end
+
+len = 1;
+if(iscell(t1))
+    len = size(t1,2);
+end
+
+im = cell(len,1);
+wb = waitbar(0,'Loading XRD Data');
+type = zeros(len,1);
+for(i=1:len)
+    fi = fopen(fullfile(t2,t1{i}));
+    s = dir(fullfile(t2,t1{i}));
+    
+    if(s.bytes > 2048*2048*2)
+        im{i} = fread(fi,[2048 2048],'*int32');
+        type(i) = 32;
+    else
+        im{i} = fread(fi,[2048 2048],'*uint16');
+        type(i) = 16;
+    end
+    
+    fclose(fi);
+    waitbar(i/len,wb,'Loading XRD Data');
+end
+close(wb);
+
+[s1] = uigetdir();
+
+if(~ischar(s1))
+    return
+end
+
+wb = waitbar(0,'Saving XRD Data');
+for(i=1:len)
+    if(type(i)==32)
+        fo = fopen(fullfile(s1,[t1{i},'.wh']),'w');
+        fwrite(fo,ones(handles.header,1));
+        fwrite(fo,im{i},'int32');
+        fclose(fo);
+    elseif(type(i)==16)
+        fo = fopen(fullfile(s1,[t1{i},'.wh']),'w');
+        fwrite(fo,ones(handles.header,1));
+        fwrite(fo,im{i},'uint16');
+        fclose(fo);
+    end    
+    
+    waitbar(i/len,wb,'Saving XRD Data');
+end
+close(wb);
