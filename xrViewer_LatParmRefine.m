@@ -22,7 +22,7 @@ function varargout = xrViewer_LatParmRefine(varargin)
 
 % Edit the above text to modify the response to help xrViewer_LatParmRefine
 
-% Last Modified by GUIDE v2.5 23-Jun-2015 09:32:05
+% Last Modified by GUIDE v2.5 30-Jul-2015 18:58:09
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -67,8 +67,27 @@ handles.filename = '';
 handles.DATA_INITSPACING = [];
 handles.numBins = 0;
 handles.binNum = str2double(get(handles.edit_binNum,'String'));
-
+handles.Override = 0;
 handles.DATA_FIT = {};
+handles.hkl_mask = [];
+handles.maxParams = struct(...
+    'Imin',0,...
+    'Imax',3*10^4,...
+    'SpacingMin',0.1);
+
+handles.DATA = struct(...
+    'intensity',{},...
+    'dspacing',{},...
+    'theta2',{},...
+    'energy',[],...
+    'maxes',{},...
+    'a',[],...
+    'b',[],...
+    'c',[],...
+    'resid',[],...
+    'theta_fit',[],...
+    'dspacing_fit',[],...
+    'data_fit',{});
 
 set(handles.pushbutton_openFile,'CData',imread('icon_folder.png'));
 set(gcf,'WindowButtonMotionFcn',@(gcf,eventdata)axesMouseOverCallback(gcf,hObject,handles));
@@ -131,7 +150,7 @@ function pushbutton_openFile_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 [t1,t2] = uigetfile({'*.mat','MAT File (*.mat)'},'Select File');
-tempFilename = [t2,t1];
+tempFilename = fullfile(t2,t1);
 disp(tempFilename)
 handles.filename = t1;
 if(length(t1)~=1)
@@ -147,21 +166,46 @@ if(length(t1)~=1)
     handles.DATA_INITSPACING = [];
     handles.numBins = 0;
     handles.DATA_FIT = {};
+       
+
     set(handles.edit_filename,'String',tempFilename);
     set(handles.edit_binNum,'String','1');
 
     handles.numBins = size(x.binData,2)/3;  
+    
+    handles.DATA = struct(...
+    'intensity',cell(handles.numBins,1),...
+    'dspacing',cell(handles.numBins,1),...
+    'theta2',cell(handles.numBins,1),...
+    'energy',cell2mat(x.binData(end,1)),...
+    'maxes',cell(handles.numBins,1),...
+    'a',[],...
+    'b',[],...
+    'c',[],...
+    'resid',[],...
+    'theta_fit',[],...
+    'dspacing_fit',[],...
+    'data_fit',cell(handles.numBins,1));
+
+%     assignin('base','hdata',handles.DATA);
     disp(handles.numBins);
     handles.binNum = str2double(get(handles.edit_binNum,'String'));
 
     set(handles.text_numBins,'String',['# of bins = ',num2str(handles.numBins)]);
     
     handles.binDATA = cell2mat(x.binData(2:end-2,:));
+
+    for(i=1:handles.numBins)
+        handles.DATA(i).intensity = cell2mat(x.binData(2:end-2,3*(i-1)+1));
+        handles.DATA(i).theta2 = cell2mat(x.binData(2:end-2,3*(i-1)+2));
+        handles.DATA(i).dspacing = cell2mat(x.binData(2:end-2,3*(i-1)+3));
+    end
+%     assignin('base','hdata2',handles.DATA);
     handles.DATA_INTENSITY = cell2mat(x.binData(2:end-2,3*(handles.binNum-1)+1));    
     handles.DATA_2THETA = cell2mat(x.binData(2:end-2,3*(handles.binNum-1)+2));
     handles.DATA_DSPACING = cell2mat(x.binData(2:end-2,3*(handles.binNum-1)+3));
     handles.ENERGY = cell2mat(x.binData(end,1));
-    disp(handles.ENERGY);
+%     disp(handles.ENERGY);
     set(handles.edit_energy,'String',num2str(handles.ENERGY));
     handles.loaded = 1;
     
@@ -188,7 +232,13 @@ if(length(t1)~=1)
     [handles.DATA_INITSPACING,~] = PlaneSpacings(initParms,type,getHKLs(type),keV2Angstrom(handles.ENERGY));
 
 %     disp(handles.DATA_INITSPACING(1))
-    
+
+    handles.maxParams.Imin = 0.15*max(handles.DATA_INTENSITY);
+    handles.maxParams.Imax = max(handles.DATA_INTENSITY);
+    handles.maxParams.SpacingMin = 0.1;
+
+    disp('Data Loaded\n')
+    set(handles.label_filepath,'String',['Input Filepath: ',tempFilename]);
     xrLatParmRefine_updatePlots(hObject,handles);
     
 end
@@ -204,6 +254,7 @@ function edit_binNum_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of edit_binNum as a double
 if(handles.numBins == 0)
     set(handles.edit_binNum,'String','1');
+    return
 else
     if(str2double(get(handles.edit_binNum,'String')) > handles.numBins)
         set(handles.edit_binNum,'String',num2str(handles.numBins));
@@ -224,6 +275,23 @@ else
         handles.DATA_DSPACING = handles.binDATA(:,3*(handles.binNum-1)+3);
     end
 end
+
+%updates the max values based on stored data
+handles.DATA_MAXES = handles.DATA(handles.binNum).maxes;
+if(~isempty(handles.DATA_MAXES))
+    set(handles.uitable_maxes,'Data',[num2cell(handles.DATA_MAXES(:,1)),num2cell(handles.DATA_MAXES(:,2)),num2cell(handles.DATA_MAXES(:,3)),num2cell(handles.DATA_MAXES(:,5))]);
+else
+    set(handles.uitable_maxes,'Data',{});
+end
+
+handles.DATA_FIT = handles.DATA(handles.binNum).data_fit;
+
+set(handles.text_maxnum,'String',['Max # = ',num2str(size(handles.DATA_MAXES,1))]);  
+set(handles.text_parmA,'String',['a = ',num2str(handles.DATA(handles.binNum).a)]);
+set(handles.text_parmB,'String',['b = ',num2str(handles.DATA(handles.binNum).b)]);
+set(handles.text_parmC,'String',['c = ',num2str(handles.DATA(handles.binNum).c)]);
+set(handles.text_parmResid2,'String',num2str(handles.DATA(handles.binNum).resid));
+
 xrLatParmRefine_updatePlots(hObject,handles);
 guidata(hObject,handles);
 
@@ -392,7 +460,6 @@ function pushbutton_calcMax_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 popval = get(handles.popupmenu_type,'Value');
-
 type = '';
 switch(popval)
     case(1)
@@ -414,73 +481,79 @@ hkls = getHKLs(type);
 if(handles.loaded==1)
     z=1;
     handles.DATA_MAXES = [,];
-    threshold = str2double(get(handles.edit_threshold,'String'));
-    totmax = max(handles.DATA_INTENSITY);
-    width = 13;
     pass = 0;
     
-    numThresh = threshold*0.0001*totmax;
-    disp(numThresh);
+    disp('Maximum Calculation Parameters');
+    disp(handles.maxParams);
+
+    h=6.626*10^-34;
+    c=3*10^8;
+    e=1.602*10^-19;
+    lambda = h * c / ( 1000 * handles.ENERGY * e );
     
-    for(i=width-1:length(handles.DATA_DSPACING)-(width-1))
+    
+    %Redo indexperspace, nonlinaer relationship
+    indexPerSpace = length(handles.DATA_DSPACING)/abs(handles.DATA_2THETA(1)-handles.DATA_2THETA(end));
+    disp(['indexperspace = ',num2str(indexPerSpace)])
+    
+    for(i=2:length(handles.DATA_DSPACING)-1)        
+        if((handles.DATA_INTENSITY(i) >= handles.maxParams.Imin) &&...
+                (handles.DATA_INTENSITY(i) <= handles.maxParams.Imax) &&...
+                (handles.DATA_INTENSITY(i) > handles.DATA_INTENSITY(i-1)) &&...
+                (handles.DATA_INTENSITY(i) > handles.DATA_INTENSITY(i+1)))
+            
+            iLeft = floor(indexPerSpace*2*180*asin((lambda*(1e10))/(2*(handles.DATA_DSPACING(i)+handles.maxParams.SpacingMin)))/pi());
+            iRight = floor(indexPerSpace*2*180*asin((lambda*(1e10))/(2*(handles.DATA_DSPACING(i)-handles.maxParams.SpacingMin)))/pi());
+            
+            if(iRight>length(handles.DATA_INTENSITY))
+                iRight=length(handles.DATA_INTENSITY);
+            end
+            if(iLeft<1)
+                iLeft=1;
+            end
+            
+            for(j=iLeft:iRight)
+                if(handles.DATA_INTENSITY(i) >= handles.DATA_INTENSITY(j))
+                    pass=1;
+                else
+                    pass=0;
+                    break;
+                end
+            end
+            
+            if(pass==1)
+                indexx=1;
+                handles.DATA_MAXES(z,1:2) = [handles.DATA_DSPACING(i),handles.DATA_INTENSITY(i)];
+                handles.DATA_MAXES(z,3) = 0.25; 
+                handles.DATA_MAXES(z,4) = handles.DATA_2THETA(i);
+                for(k=1:length(handles.DATA_INITSPACING))
+                    if(abs(handles.DATA_DSPACING(i)-handles.DATA_INITSPACING(k))<abs(handles.DATA_DSPACING(i)-handles.DATA_INITSPACING(indexx)))
+                        indexx = k;
+                    end                
+                end
+                handles.DATA_MAXES(z,5) = str2double([num2str(hkls(1,indexx)),num2str(hkls(2,indexx)),num2str(hkls(3,indexx))]);
+                z=z+1;
+            end 
         
-        for(j=1:(width-1)/2)
-            if(handles.DATA_INTENSITY(i) > handles.DATA_INTENSITY(i-j) + numThresh)
-                pass = 1;
-            else
-                pass=0;
-                break;
-            end
-            if(handles.DATA_INTENSITY(i) > handles.DATA_INTENSITY(i+j) + numThresh)
-                pass = 1;
-            else
-                pass=0;
-                break;
-            end
-        end
-        
-        if(pass==1)
-            indexx=1;
-            handles.DATA_MAXES(z,1:2) = [handles.DATA_DSPACING(i),handles.DATA_INTENSITY(i)];
-            handles.DATA_MAXES(z,3) = 0.25; 
-            handles.DATA_MAXES(z,4) = handles.DATA_2THETA(i);
-            for(k=1:length(handles.DATA_INITSPACING))
-                if(abs(handles.DATA_DSPACING(i)-handles.DATA_INITSPACING(k))<abs(handles.DATA_DSPACING(i)-handles.DATA_INITSPACING(indexx)))
-                    indexx = k;
-                end                
-            end
-            handles.DATA_MAXES(z,5) = str2double([num2str(hkls(1,indexx)),num2str(hkls(2,indexx)),num2str(hkls(3,indexx))]);
-            z=z+1;
-        end        
+        end    
     end
     
     handles.DATA_MAXES = orderSort(handles.DATA_MAXES,'a',1);
     if(~isempty(handles.DATA_MAXES))
-        set(handles.uitable_maxes,'Data',[num2cell(handles.DATA_MAXES(:,1)),num2cell(handles.DATA_MAXES(:,2)),num2cell(handles.DATA_MAXES(:,3)),num2cell(handles.DATA_MAXES(:,5))])
+        set(handles.uitable_maxes,'Data',[num2cell(handles.DATA_MAXES(:,1)),num2cell(handles.DATA_MAXES(:,2)),num2cell(handles.DATA_MAXES(:,3)),num2cell(handles.DATA_MAXES(:,5))]);
     else
-        set(handles.uitable_maxes,'Data',{})
+        set(handles.uitable_maxes,'Data',{});
     end
     
-% %     width2 = 0.05;
-% %     scale = handles.DATA_DSPACING(1)-handles.DATA_DSPACING(end);
-% %     disp('scale')
-% %     disp(scale);
-% %     
-% %     tval = [];
-% %     for(i=1:length(handles.DATA_MAXES))
-% %         tval(i) = specIntegrate(handles.DATA_INTENSITY,scale,handles.DATA_MAXES(i,1)-width2/2,handles.DATA_MAXES(i,1)+width2/2);        
-% %     end
-% %     disp(tval);
-% % %     figure
-% % %     stem(tval);
-    set(handles.text_maxnum,'String',['Max # = ',num2str(size(handles.DATA_MAXES,1))]);
+    disp('Maximum Calculation Complete')
+    set(handles.text_maxnum,'String',['Max # = ',num2str(size(handles.DATA_MAXES,1))]);       
+    
+    handles.DATA(handles.binNum).maxes = handles.DATA_MAXES;
+    
     xrLatParmRefine_updatePlots(hObject,handles);
 else
     msgbox('Please load data before calculations');
 end
-% if(~isempty( handles.DATA_MAXES))
-%     disp(handles.DATA_MAXES(:,1));
-% end
 guidata(hObject,handles);
 
 
@@ -589,6 +662,8 @@ if(handles.loaded == 1)
     else
         set(handles.uitable_maxes,'Data',{})
     end
+    
+    handles.DATA(handles.binNum).maxes = handles.DATA_MAXES;
     
     xrLatParmRefine_updatePlots(hObject,handles);  
 end
@@ -989,6 +1064,8 @@ function button_calcParam_Callback(hObject, eventdata, handles)
 if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
 
     options = optimset('TolFun',1e-10,'Display','notify','MaxFunEvals',20000,'MaxIter',2000);
+%     options2 = optimset('Di);
+    
     handles.DATA_FIT = {};
 
     tt = get(handles.popupmenu_dist,'Value');
@@ -1025,6 +1102,10 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
         xDataD = handles.DATA_DSPACING(indice2:indice1,1);
         yData = handles.DATA_INTENSITY(indice2:indice1,1);
 
+        assignin('base','xdata',xDataT);
+        assignin('base','ydata',yData);
+        
+        disp(indice2);
 
         p0 = [abs(handles.DATA_MAXES(i,2))/12;...
             0.05;...
@@ -1033,18 +1114,21 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
             0;
             mean(yData)];
 
+        assignin('base','p0',p0);
     %     p0 = [513726.373445702;...
     %             .0813;...
     %             .1539;...
     %             11.5327;...
     %             mean(yData)]
     %         
-        [p, resnorm,resid,exitf]  = lsqcurvefit(@(p0,xDataT)pfunc(p0,xDataT,type), p0, xDataT, yData);
+        [p, resnorm,resid,exitf]  = lsqcurvefit(@(p0,xDataT)pfunc(p0,xDataT,type), p0, xDataT, yData,[0,0,0,0,0,0],[Inf,Inf,Inf,Inf,Inf,Inf]);
 
         handles.DATA_FIT{i,1}=xDataD;
         handles.DATA_FIT{i,2}=xDataT;
         handles.DATA_FIT{i,3}=pfunc(p, xDataT,type);        
 
+        %tth_fit is the 2theta for the given peak distribution fit
+        
         tth_fit(1,i) = p(4);
         A_fit(1,i) = p(1);
         Resnorm_fit(1,i) = resnorm;
@@ -1067,13 +1151,18 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
     % disp(a0)
 
     a0out = [0 0 0];
-    ff = @(x)LatParmResid2(x,tth_fit,keV2Angstrom(handles.ENERGY),hkls,typeLatt);
-    [a0out,a0resid,iterflag] = lsqnonlin(ff,parms0,2,4,options);
-
+    ff = @(x)LatParmResid(x,tth_fit,keV2Angstrom(handles.ENERGY),hkls,typeLatt);
+    [a0out,a0resid,iterflag] = lsqnonlin(ff,parms0(1),2,4,options);
+    a0out(2:3)=0;
     set(handles.text_parmA,'String',['a = ',num2str(a0out(1))]);
     set(handles.text_parmB,'String',['b = ',num2str(a0out(2))]);
     set(handles.text_parmC,'String',['c = ',num2str(a0out(3))]);
     set(handles.text_parmResid2,'String',num2str(a0resid));
+    
+    handles.lattice_params(handles.binNum,1)=a0out(1);
+    handles.lattice_params(handles.binNum,2)=a0out(2);
+    handles.lattice_params(handles.binNum,3)=a0out(3);
+    
     assignin('base','a0resid',a0resid);
 
     filename = [handles.filename(1:end-4),'_LarParmRefine.mat'];
@@ -1082,8 +1171,1050 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
     %data to save to the parameter file
 
 
-
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %saves and shows the total output data
+    handles.DATA(handles.binNum).maxes = handles.DATA_MAXES;
+    handles.DATA(handles.binNum).a = a0out(1);
+    handles.DATA(handles.binNum).b = a0out(2);
+    handles.DATA(handles.binNum).c = a0out(3);
+    handles.DATA(handles.binNum).theta_fit = tth_fit;
+    handles.DATA(handles.binNum).data_fit = handles.DATA_FIT;
+    handles.DATA(handles.binNum).resid = a0resid;
+    
+    assignin('base','DATA',handles.DATA)
+    
     set(handles.checkbox_fits,'Value',1);
     xrLatParmRefine_updatePlots(hObject,handles); 
 end
 guidata(hObject,handles)
+
+
+% --- Executes on button press in button_binMinus.
+function button_binMinus_Callback(hObject, eventdata, handles)
+% hObject    handle to button_binMinus (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if(handles.numBins == 0)
+    set(handles.edit_binNum,'String','1');
+    return
+else
+    if(handles.binNum~=1)
+        handles.binNum = handles.binNum-1;
+        handles.DATA_INTENSITY = handles.binDATA(:,3*(handles.binNum-1)+1);    
+        handles.DATA_2THETA = handles.binDATA(:,3*(handles.binNum-1)+2);
+        handles.DATA_DSPACING = handles.binDATA(:,3*(handles.binNum-1)+3);
+        set(handles.edit_binNum,'String',num2str(handles.binNum));
+    end
+end
+
+handles.maxParams.Imax = max(handles.DATA_INTENSITY);
+handles.maxParams.Imin = 0.65*max(handles.DATA_INTENSITY);
+handles.maxParams.SpacingMin = 0.1;
+
+%updates the max values based on stored data
+handles.DATA_MAXES = handles.DATA(handles.binNum).maxes;
+if(~isempty(handles.DATA_MAXES))
+    set(handles.uitable_maxes,'Data',[num2cell(handles.DATA_MAXES(:,1)),num2cell(handles.DATA_MAXES(:,2)),num2cell(handles.DATA_MAXES(:,3)),num2cell(handles.DATA_MAXES(:,5))]);
+else
+    set(handles.uitable_maxes,'Data',{});
+end
+
+%updates fit data
+handles.DATA_FIT = handles.DATA(handles.binNum).data_fit;
+
+set(handles.text_maxnum,'String',['Max # = ',num2str(size(handles.DATA_MAXES,1))]);  
+set(handles.text_parmA,'String',['a = ',num2str(handles.DATA(handles.binNum).a)]);
+set(handles.text_parmB,'String',['b = ',num2str(handles.DATA(handles.binNum).b)]);
+set(handles.text_parmC,'String',['c = ',num2str(handles.DATA(handles.binNum).c)]);
+set(handles.text_parmResid2,'String',num2str(handles.DATA(handles.binNum).resid));
+
+xrLatParmRefine_updatePlots(hObject,handles);
+guidata(hObject,handles);
+
+% --- Executes on button press in button_binPlus.
+function button_binPlus_Callback(hObject, eventdata, handles)
+% hObject    handle to button_binPlus (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if(handles.numBins == 0)
+    set(handles.edit_binNum,'String','1');
+    return
+else
+    if(handles.binNum~=handles.numBins)
+        handles.binNum = handles.binNum+1;
+        handles.DATA_INTENSITY = handles.binDATA(:,3*(handles.binNum-1)+1);    
+        handles.DATA_2THETA = handles.binDATA(:,3*(handles.binNum-1)+2);
+        handles.DATA_DSPACING = handles.binDATA(:,3*(handles.binNum-1)+3);
+        set(handles.edit_binNum,'String',num2str(handles.binNum));
+    end
+end
+
+handles.maxParams.Imax = max(handles.DATA_INTENSITY);
+handles.maxParams.Imin = 0.65*max(handles.DATA_INTENSITY);
+handles.maxParams.SpacingMin = 0.1;
+
+%updates the max values based on stored data
+handles.DATA_MAXES = handles.DATA(handles.binNum).maxes;
+if(~isempty(handles.DATA_MAXES))
+    set(handles.uitable_maxes,'Data',[num2cell(handles.DATA_MAXES(:,1)),num2cell(handles.DATA_MAXES(:,2)),num2cell(handles.DATA_MAXES(:,3)),num2cell(handles.DATA_MAXES(:,5))]);
+else
+    set(handles.uitable_maxes,'Data',{});
+end
+
+handles.DATA_FIT = handles.DATA(handles.binNum).data_fit;
+
+set(handles.text_maxnum,'String',['Max # = ',num2str(size(handles.DATA_MAXES,1))]);  
+set(handles.text_parmA,'String',['a = ',num2str(handles.DATA(handles.binNum).a)]);
+set(handles.text_parmB,'String',['b = ',num2str(handles.DATA(handles.binNum).b)]);
+set(handles.text_parmC,'String',['c = ',num2str(handles.DATA(handles.binNum).c)]);
+set(handles.text_parmResid2,'String',num2str(handles.DATA(handles.binNum).resid));
+    
+xrLatParmRefine_updatePlots(hObject,handles);
+guidata(hObject,handles);
+
+
+% --- Executes on button press in button_calcparms.
+function button_calcparms_Callback(hObject, eventdata, handles)
+% hObject    handle to button_calcparms (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% handles.maxParams = struct(...
+%     'Imin',0,...
+%     'Imax',3*10^4,...
+%     'SpacingMin',0.1);
+
+prompt = {'Intensity Maximum (leave blank for max value over entire function',...
+    'Intensity Minimum (leave blank for auto 25% of max',...
+    'Min Distance from Next Maximum (if two peaks are within the distance, chooses the peak with the larger value)'};
+
+title = 'Edit Calculation Parameters';
+def = {num2str(handles.maxParams.Imax),num2str(handles.maxParams.Imin),num2str(handles.maxParams.SpacingMin)};
+
+answer = inputdlg(prompt,title,1,def);
+
+if(~isempty(answer))
+    if(isempty(answer{1}))
+        handles.maxParams.Imax = max(handles.DATA_INTENSITY);
+    else
+        handles.maxParams.Imax = str2double(answer{1});
+    end
+    
+    if(isempty(answer{2}))
+        handles.maxParams.Imin = 0.15*max(handles.DATA_INTENSITY);
+    else
+        handles.maxParams.Imin = str2double(answer{2});
+    end
+    
+    if(~isempty(answer{3}))
+        handles.maxParams.SpacingMin = str2double(answer{3});
+    end
+    
+    disp(handles.maxParams);
+end
+
+guidata(hObject,handles)
+
+
+% --------------------------------------------------------------------
+function menu_File_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_File (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menu_saveRefine_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_saveRefine (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+[t1,t2] = uiputfile('*.mat','Save Output Data');
+
+if(ischar(t1) && handles.loaded==1)
+    refinement_data = handles.DATA;
+    save(fullfile(t2,t1),'refinement_data');
+    disp(['File ',fullfile(t2,t1),' Saved Successfully']);
+end
+
+
+% --------------------------------------------------------------------
+function menu_exit_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_exit (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+close();
+
+
+% --------------------------------------------------------------------
+function menu_calcs_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_calcs (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menu_calcmaxes_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_calcmaxes (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if(handles.loaded==0)
+    return
+end
+
+temp = handles.binNum;
+
+popval = get(handles.popupmenu_type,'Value');
+type = '';
+switch(popval)
+    case(1)
+        type = 'cubic';
+    case(2)
+        type = 'hexagonal';
+    case(3)
+        type = 'trigonal';
+    case(4)
+        type = 'tetragonal';
+    case(5)
+        type = 'orthorhombic';
+    case(6)    
+        type = 'monoclinic';
+end
+    
+hkls = getHKLs(type);
+
+s=sprintf('Lattice Type = %s\n\nhkl''s=\n\n',type);
+for(jj=1:size(hkls,2))
+    s = [s,sprintf('%d%d%d\n',hkls(1,jj),hkls(2,jj),hkls(3,jj))];
+end
+s = [s,sprintf('\nType in the hkls considered for max finding as csv (eg 100,101,200)')];
+prompt = {s};
+
+if(handles.Override == 0)
+    title = 'Choose hkl''s for Max Finding';
+    def = {'100,110,200,211'};
+
+    answer = inputdlg(prompt,title,1,def);
+
+    inputHkls = str2num(answer{1});
+
+    hkl_mask = zeros(1,size(hkls,2));
+
+    for(i=1:length(inputHkls))
+        for(jj=1:size(hkls,2))
+            if(inputHkls(i)==str2double([num2str(hkls(1,jj)),num2str(hkls(2,jj)),num2str(hkls(3,jj))]))
+                hkl_mask(jj)=1;
+            end
+        end
+    end
+%     disp(hkl_mask);
+
+    handles.maxParams.SpacingMin = 0.1;
+    
+else
+    hkl_mask = handles.hkl_mask;
+end
+
+tic
+for(i=1:handles.numBins)
+    handles.binNum = i;
+
+    handles.DATA_INTENSITY = handles.binDATA(:,3*(handles.binNum-1)+1);    
+    handles.DATA_2THETA = handles.binDATA(:,3*(handles.binNum-1)+2);
+    handles.DATA_DSPACING = handles.binDATA(:,3*(handles.binNum-1)+3);
+    set(handles.edit_binNum,'String',num2str(handles.binNum));
+
+
+    handles.maxParams.Imax = max(handles.DATA_INTENSITY);
+    handles.maxParams.Imin = 0.65*max(handles.DATA_INTENSITY);    
+
+    %updates the max values based on stored data
+    handles.DATA_MAXES = handles.DATA(handles.binNum).maxes;
+    if(~isempty(handles.DATA_MAXES))
+        set(handles.uitable_maxes,'Data',[num2cell(handles.DATA_MAXES(:,1)),num2cell(handles.DATA_MAXES(:,2)),num2cell(handles.DATA_MAXES(:,3)),num2cell(handles.DATA_MAXES(:,5))]);
+    else
+        set(handles.uitable_maxes,'Data',{});
+    end
+
+    handles.DATA_FIT = handles.DATA(handles.binNum).data_fit;       
+
+    if(handles.loaded==1)
+        z=1;
+        handles.DATA_MAXES = [,];
+        pass = 0;
+
+%         disp('Maximum Calculation Parameters');
+%         disp(handles.maxParams);
+
+        h=6.626*10^-34;
+        c=3*10^8;
+        e=1.602*10^-19;
+        lambda = h * c / ( 1000 * handles.ENERGY * e );
+
+
+        %Redo indexperspace, nonlinaer relationship
+        indexPerSpace = length(handles.DATA_DSPACING)/abs(handles.DATA_2THETA(1)-handles.DATA_2THETA(end));
+%         disp(['indexperspace = ',num2str(indexPerSpace)])
+
+        %finds all local maximums, check to see if there is another within
+        %mindistance, if so chooses the largest of them
+% %         for(i=2:length(handles.DATA_DSPACING)-1)        
+% %             if((handles.DATA_INTENSITY(i) >= handles.maxParams.Imin) &&...
+% %                     (handles.DATA_INTENSITY(i) <= handles.maxParams.Imax) &&...
+% %                     (handles.DATA_INTENSITY(i) > handles.DATA_INTENSITY(i-1)) &&...
+% %                     (handles.DATA_INTENSITY(i) > handles.DATA_INTENSITY(i+1)))
+% % 
+% %                 iLeft = floor(indexPerSpace*2*180*asin((lambda*(1e10))/(2*(handles.DATA_DSPACING(i)+handles.maxParams.SpacingMin)))/pi());
+% %                 iRight = floor(indexPerSpace*2*180*asin((lambda*(1e10))/(2*(handles.DATA_DSPACING(i)-handles.maxParams.SpacingMin)))/pi());
+% % 
+% %                 if(iRight>length(handles.DATA_INTENSITY))
+% %                     iRight=length(handles.DATA_INTENSITY);
+% %                 end
+% %                 if(iLeft<1)
+% %                     iLeft=1;
+% %                 end
+% % 
+% %                 for(j=iLeft:iRight)
+% %                     if(handles.DATA_INTENSITY(i) >= handles.DATA_INTENSITY(j))
+% %                         pass=1;
+% %                     else
+% %                         pass=0;
+% %                         break;
+% %                     end
+% %                 end
+% % 
+% %                 if(pass==1)
+% %                     indexx=1;
+% %                     handles.DATA_MAXES(z,1:2) = [handles.DATA_DSPACING(i),handles.DATA_INTENSITY(i)];
+% %                     handles.DATA_MAXES(z,3) = 0.25; 
+% %                     handles.DATA_MAXES(z,4) = handles.DATA_2THETA(i);
+% %                     for(k=1:length(handles.DATA_INITSPACING))
+% %                         if(abs(handles.DATA_DSPACING(i)-handles.DATA_INITSPACING(k))<abs(handles.DATA_DSPACING(i)-handles.DATA_INITSPACING(indexx)))
+% %                             indexx = k;
+% %                         end                
+% %                     end
+% %                     handles.DATA_MAXES(z,5) = str2double([num2str(hkls(1,indexx)),num2str(hkls(2,indexx)),num2str(hkls(3,indexx))]);
+% %                     z=z+1;
+% %                 end 
+% % 
+% %             end    
+% %         end
+
+        %new peak finding algorithm, looks within a certain range of the
+        %inital hkl spacings, chooses the max within that range as the
+        %vlaue for that specific hkl
+        
+        %only choosing the first 4 hkls, can be changed
+        
+        ct1=1;
+        for(ii=1:size(hkls,2))  
+            if(hkl_mask(ii)==1)
+                for(j=1:length(handles.DATA_INTENSITY))
+                    if(handles.DATA_DSPACING(j) < handles.DATA_INITSPACING(ii)+handles.maxParams.SpacingMin)
+                        iLeft = j;
+                        break
+                    else
+                        iLeft = j;
+                    end
+                end
+                for(j=iLeft:length(handles.DATA_INTENSITY))
+                    if(handles.DATA_DSPACING(j) < handles.DATA_INITSPACING(ii)-handles.maxParams.SpacingMin)
+                        iRight = j;
+                        break
+                    else
+                        iRight = j;
+                    end
+                end
+    %             iLeft = find(handles.DATA_DSPACING>handles.DATA_INITSPACING(i)+handles.maxParams.SpacingMin);
+    %             iRight = find(handles.DATA_DSPACING<handles.DATA_INITSPACING(i)-handles.maxParams.SpacingMin);
+
+                if(iRight>length(handles.DATA_INTENSITY))
+                    iRight=length(handles.DATA_INTENSITY);
+                end
+                if(iLeft<1)
+                    iLeft=1;
+                end
+
+    %             disp(sprintf('iLeft for #%d is %d, dspace=%d',i,iLeft,handles.DATA_DSPACING(iLeft)));
+    %             disp(sprintf('iRight for #%d is %d, dspace=%d',i,iRight,handles.DATA_DSPACING(iRight)));
+                for(j=iLeft+1:iRight-1)
+                    if(j==iLeft+1)
+                        maxIndex = j;
+                    end
+                    if(handles.DATA_INTENSITY(j) > handles.DATA_INTENSITY(maxIndex))
+                        maxIndex = j;
+                    end
+                    handles.DATA_MAXES(ct1,1:2) = [handles.DATA_DSPACING(maxIndex),handles.DATA_INTENSITY(maxIndex)];
+                    handles.DATA_MAXES(ct1,3) = 0.15; 
+                    handles.DATA_MAXES(ct1,4) = handles.DATA_2THETA(maxIndex);
+                    handles.DATA_MAXES(ct1,5) = str2double([num2str(hkls(1,ii)),num2str(hkls(2,ii)),num2str(hkls(3,ii))]);
+                end
+                ct1=ct1+1;
+            end
+        end
+        
+        %sorts the maxes in order of d-spacing
+        handles.DATA_MAXES = orderSort(handles.DATA_MAXES,'a',1);
+        if(~isempty(handles.DATA_MAXES))
+            set(handles.uitable_maxes,'Data',[num2cell(handles.DATA_MAXES(:,1)),num2cell(handles.DATA_MAXES(:,2)),num2cell(handles.DATA_MAXES(:,3)),num2cell(handles.DATA_MAXES(:,5))]);
+        else
+            set(handles.uitable_maxes,'Data',{});
+        end
+
+        disp(sprintf('Maximum Calculation Complete for Bin #%d',i));
+        set(handles.text_maxnum,'String',['Max # = ',num2str(size(handles.DATA_MAXES,1))]);       
+
+        handles.DATA(handles.binNum).maxes = handles.DATA_MAXES;
+
+        xrLatParmRefine_updatePlots(hObject,handles);
+    else
+        msgbox('Please load data before calculations');
+    end
+end
+disp(sprintf('Elapsed Time = %5.2fs',toc));
+
+handles.binNum = temp;
+
+handles.DATA_INTENSITY = handles.binDATA(:,3*(handles.binNum-1)+1);    
+handles.DATA_2THETA = handles.binDATA(:,3*(handles.binNum-1)+2);
+handles.DATA_DSPACING = handles.binDATA(:,3*(handles.binNum-1)+3);
+set(handles.edit_binNum,'String',num2str(handles.binNum));
+
+handles.maxParams.Imax = max(handles.DATA_INTENSITY);
+handles.maxParams.Imin = 0.15*max(handles.DATA_INTENSITY);
+handles.maxParams.SpacingMin = 0.1;
+  
+
+%updates the max values based on stored data
+handles.DATA_MAXES = handles.DATA(handles.binNum).maxes;
+if(~isempty(handles.DATA_MAXES))
+    set(handles.uitable_maxes,'Data',[num2cell(handles.DATA_MAXES(:,1)),num2cell(handles.DATA_MAXES(:,2)),num2cell(handles.DATA_MAXES(:,3)),num2cell(handles.DATA_MAXES(:,5))]);
+else
+    set(handles.uitable_maxes,'Data',{});
+end
+
+handles.DATA_FIT = handles.DATA(handles.binNum).data_fit;
+
+set(handles.text_maxnum,'String',['Max # = ',num2str(size(handles.DATA_MAXES,1))]);  
+set(handles.text_parmA,'String',['a = ',num2str(handles.DATA(handles.binNum).a)]);
+set(handles.text_parmB,'String',['b = ',num2str(handles.DATA(handles.binNum).b)]);
+set(handles.text_parmC,'String',['c = ',num2str(handles.DATA(handles.binNum).c)]);
+set(handles.text_parmResid2,'String',num2str(handles.DATA(handles.binNum).resid));
+
+xrLatParmRefine_updatePlots(hObject,handles);
+guidata(hObject,handles);
+
+% --------------------------------------------------------------------
+function menu_calcfitparams_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_calcfitparams (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if(handles.loaded==0)
+    return
+end
+for(i=1:handles.numBins)
+    if(isempty(handles.DATA(i).maxes))
+        return
+    end
+end
+
+options = optimset('TolFun',1e-10,'Display','notify','MaxFunEvals',20000,'MaxIter',2000,'Display','off');
+options2 = optimset('Display','off');
+tt = get(handles.popupmenu_dist,'Value');
+switch(tt)
+    case(1)
+        type = 'pvoigt';
+    case(2)
+        type = 'gaussian';
+    case(3)
+        type = 'lorentz';
+end
+
+popval = get(handles.popupmenu_type,'Value');
+typeLatt = '';
+switch(popval)
+    case(1)
+        typeLatt = 'cubic';
+    case(2)
+        typeLatt = 'hexagonal';
+    case(3)
+        typeLatt = 'trigonal';
+    case(4)
+        typeLatt = 'tetragonal';
+    case(5)
+        typeLatt = 'orthorhombic';
+    case(6)    
+        typeLatt = 'monoclinic';
+end
+    
+if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
+    
+    temp = handles.binNum;
+    for(ii=1:handles.numBins)     
+        assignin('base','binNum',ii)
+        handles.binNum = ii;
+        
+        handles.DATA_INTENSITY = handles.binDATA(:,3*(handles.binNum-1)+1);    
+        handles.DATA_2THETA = handles.binDATA(:,3*(handles.binNum-1)+2);
+        handles.DATA_DSPACING = handles.binDATA(:,3*(handles.binNum-1)+3);
+        handles.DATA_MAXES = handles.DATA(handles.binNum).maxes;
+
+        handles.DATA_FIT = {};
+
+        for(i=1:size(handles.DATA_MAXES,1))
+            indice1 = length(find(handles.DATA_DSPACING > handles.DATA_MAXES(i,1)-handles.DATA_MAXES(i,3)/2));
+            indice2 = length(find(handles.DATA_DSPACING > handles.DATA_MAXES(i,1)+handles.DATA_MAXES(i,3)/2));
+            xDataT = handles.DATA_2THETA(indice2:indice1,1);
+            xDataD = handles.DATA_DSPACING(indice2:indice1,1);
+            yData = handles.DATA_INTENSITY(indice2:indice1,1);
+
+
+            p0 = [abs(handles.DATA_MAXES(i,2))/12;...
+                0.05;...
+                handles.DATA_MAXES(i,3);... %width
+                handles.DATA_MAXES(i,4);... %2thetas
+                0;
+                mean(yData)];
+
+        %     p0 = [513726.373445702;...
+        %             .0813;...
+        %             .1539;...
+        %             11.5327;...
+        %             mean(yData)]
+        %         
+            [p, resnorm,resid,exitf]  = lsqcurvefit(@(p0,xDataT)pfunc(p0,xDataT,type), p0, xDataT, yData,[0,0,0,0,0,0],[Inf,Inf,Inf,Inf,Inf,Inf],options2);
+
+            handles.DATA_FIT{i,1}=xDataD;
+            handles.DATA_FIT{i,2}=xDataT;
+            handles.DATA_FIT{i,3}=pfunc(p, xDataT,type);        
+
+            %tth_fit is the 2theta for the given peak distribution fit
+
+            tth_fit(1,i) = p(4);
+            A_fit(1,i) = p(1);
+            Resnorm_fit(1,i) = resnorm;
+
+        %     disp(dspc_fit)
+        end
+
+        a0 = str2double(get(handles.edit_parmA,'String'));
+        b0 = str2double(get(handles.edit_parmB,'String'));
+        c0 = str2double(get(handles.edit_parmC,'String'));
+
+        parms0 = [a0,b0,c0];
+        hkls = [];
+        for(i=1:size(handles.DATA_MAXES,1))
+            tstring = num2str(handles.DATA_MAXES(i,5));
+            hkls(i,:) = [str2double(tstring(1)),str2double(tstring(2)),str2double(tstring(3))];
+        end
+
+%         disp(hkls)
+        % disp(a0)
+
+        a0out = [0 0 0];
+        ff = @(x)LatParmResid(x,tth_fit,keV2Angstrom(handles.ENERGY),hkls,typeLatt);
+        [a0out,a0resid,iterflag] = lsqnonlin(ff,parms0(1),2,4,options);     % using first param for cubic, lsq algorithm requires 
+                                                                            % equation for every variable (a,b,c) even if unused
+        a0out(2:3)=0; % fix related to above (for cubic)
+        
+        handles.lattice_params(handles.binNum,1)=a0out(1);
+        handles.lattice_params(handles.binNum,2)=a0out(2);
+        handles.lattice_params(handles.binNum,3)=a0out(3);
+
+        assignin('base','a0resid',a0resid);
+
+        filename = [handles.filename(1:end-4),'_LarParmRefine.mat'];
+        disp(sprintf('Fit and Parameter Refinement Complete for Bin #%d Complete',ii));
+
+        %data to save to the parameter file
+
+
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %saves and shows the total output data
+        handles.DATA(handles.binNum).a = a0out(1);
+        handles.DATA(handles.binNum).b = a0out(2);
+        handles.DATA(handles.binNum).c = a0out(3);
+        handles.DATA(handles.binNum).theta_fit = tth_fit;
+        handles.DATA(handles.binNum).data_fit = handles.DATA_FIT;
+        handles.DATA(handles.binNum).resid = a0resid;   
+    
+    end
+end
+
+handles.binNum = temp;
+
+handles.DATA_INTENSITY = handles.binDATA(:,3*(handles.binNum-1)+1);    
+handles.DATA_2THETA = handles.binDATA(:,3*(handles.binNum-1)+2);
+handles.DATA_DSPACING = handles.binDATA(:,3*(handles.binNum-1)+3);
+set(handles.edit_binNum,'String',num2str(handles.binNum));
+
+handles.maxParams.Imax = max(handles.DATA_INTENSITY);
+handles.maxParams.Imin = 0.15*max(handles.DATA_INTENSITY);
+handles.maxParams.SpacingMin = 0.1;
+
+set(handles.checkbox_fits,'Value',1);
+xrLatParmRefine_updatePlots(hObject,handles); 
+assignin('base','DATA',handles.DATA)
+guidata(hObject,handles)
+
+
+% --------------------------------------------------------------------
+function menu_loadrefine_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_loadrefine (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if(handles.loaded==0)
+    msgbox('Load bin data before refinement parameters');
+    return
+end
+
+[t1,t2] = uigetfile('*.mat','Select Refinement .mat File');
+
+if(~ischar(t1))
+    return
+end
+
+inputData = load(fullfile(t2,t1));
+if(length(inputData.refinement_data(1).intensity) == length(handles.DATA_INTENSITY) && size(inputData.refinement_data,1) == handles.numBins)
+    handles.DATA = inputData.refinement_data;
+else
+    msgbox('Invalid Refinement File (# number of bins or data points do not match)')
+end
+disp('Data Loaded');
+guidata(hObject,handles);
+
+
+% --------------------------------------------------------------------
+function menu_analysis_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_analysis (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menu_strainpole_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_strainpole (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+waitfor(msgbox('Select the reference refinement data'));
+
+[t1,t2] = uigetfile('*.mat','Choose reference refinement data');
+
+if(~ischar(t1))
+    return
+end
+
+reference_refinement = load(fullfile(t2,t1));
+if(size(reference_refinement.refinement_data,1)>1)
+    waitfor(msgbox('More than one set of data detected, please choose different refinement data'));
+    return
+end
+
+hkls = zeros(3,length(reference_refinement.refinement_data(1).theta_fit));
+theta0_Ifits = reference_refinement.refinement_data(1).theta_fit; %using
+% different method, instead of the fitted thetas, using the overall fitted
+% lattice parameter and using the plane spacing equation with the parameter
+% to get the thetas for the hkls
+
+for(i=1:size(hkls,2))
+    temp = num2str(reference_refinement.refinement_data(1).maxes(i,5));
+    hkls(:,i) = [str2double(temp(1));str2double(temp(2));str2double(temp(3))];
+    %note hkls ordered highest to lowest (eg 211 to 100) due to refinement
+    %data format. It matches theta values from refinement data read in
+    %order.
+end
+assignin('base','hkls',hkls);
+
+s=sprintf('Reference Refinement Info\n# of Hkls = %d\nLattice Parameter: %6.5f\nTheta Fits:\n',size(hkls,2),reference_refinement.refinement_data(1).a);
+for(i=1:size(hkls,2))
+    s = [s,sprintf('(%d,%d,%d) = %7.4f°\n',hkls(1,i),hkls(2,i),hkls(3,i),theta0_Ifits(i))];
+end
+waitfor(msgbox(s));
+waitfor(msgbox('Select the refinement data for each image'));
+
+
+[t1,t2] = uigetfile('*.mat','Choose reference refinement data','Multiselect','On');
+
+if(isempty(t1))
+    return
+end
+
+theta_fits=[];
+imageCount = length(t1);
+binCount = 0;
+for(i=1:length(t1))
+    t = load(fullfile(t2,t1{i}));
+    disp(['Loaded ',[t2,t1{i}]]);
+    if(i==1)
+        theta_fits = zeros(size(t.refinement_data,1),size(hkls,2),length(t1));
+        binCount = size(t.refinement_data,1);
+    end
+    for(j=1:size(hkls,2))
+        for(k=1:size(t.refinement_data,1))
+            theta_fits(k,j,i) = t.refinement_data(k).theta_fit(j);
+        end
+    end
+%     for(k=1:size(t.refinement_data,1))
+%     end
+end
+
+assignin('base','theta_fits',theta_fits);
+waitfor(msgbox(sprintf('Number of image refinement data loaded: %d\nNumber of Bins per Image: %d',imageCount,binCount)));
+
+%strain calculations for all images
+
+popval = get(handles.popupmenu_type,'Value');
+type = '';
+switch(popval)
+    case(1)
+        type = 'cubic';
+    case(2)
+        type = 'hexagonal';
+    case(3)
+        type = 'trigonal';
+    case(4)
+        type = 'tetragonal';
+    case(5)
+        type = 'orthorhombic';
+    case(6)    
+        type = 'monoclinic';
+end
+    
+handles.ENERGY = reference_refinement.refinement_data(1).energy;
+[~,thetas0] = PlaneSpacings(reference_refinement.refinement_data(1).a,type,hkls,keV2Angstrom(handles.ENERGY));
+% the initParms in the example code are predefined. Operating under the
+% assumption that it represents the a0 value found from fitting (averaged, summed etc.)
+
+%note thetas0, not bragg angle, need to multiply by 2
+thetas0=thetas0*2;
+assignin('base','thetas0',thetas0);
+% for(i=1:length(t1))
+%     for(j=1:size(t.refinement_data,1))
+%             for(l=1:size(hkls,2))
+%                 denom = sind(theta_fits(i,l,j)./2);
+%                 if(denom==0)
+%                     strains(i,l,j) = Inf;
+%                 else
+%                     strains(i,l,j) = sind(thetas0(l)./2)./denom - 1;
+%                 end
+%             end
+%     end
+% end
+
+strains = zeros(size(theta_fits));
+
+for(i=1:length(t1))
+    for(j=1:size(hkls,2))
+        for(k=1:size(t.refinement_data,1))
+            denom = sind(theta_fits(k,j,i)./2);
+            if(denom==0)
+                strains(k,j,i) = Inf;
+            else
+                strains(k,j,i) = sind(thetas0(j)./2)./denom - 1;
+            end
+        end
+    end
+end
+assignin('base','strains',strains);
+
+%These parameters need to be accounted for
+eta = 0:360/binCount:360-360/binCount;
+
+%ome = -62.5:5:62.5; %test ome, has 26 5-degree intervals, (28 image set with 2 darks images)
+
+titlep = 'Choose Omega Range';
+prompt = {'Omega Upper Limit','Omega Lower Limit'};
+def = {'62.5','-62.5'};
+answer = inputdlg(prompt,titlep,1,def);
+
+ome = str2double(answer{2}):(str2double(answer{1})-str2double(answer{2}))/(length(t1)-1):str2double(answer{1});
+% # of refinemnt files read (one for each iamge) needs to correspond to
+% each omega inteval. Checks for that and displays mismatch
+if(length(t1)~=length(ome))
+    disp('Data Mismatch. Not enough image refinmenet data to correspond to chosen omgea intervals');
+end
+
+%generates the scatter vectors for each hkl (based off of the reference
+%hkls)
+
+%generates scatterign vectors for sp figure
+scVectors = {};
+
+for(i=1:size(hkls,2))
+    scVectors(i) = {GeneratePFScattVectors(thetas0(i),ome,eta)};
+end
+assignin('base','scatters',scVectors);
+
+
+
+%creates the strains formatted for the PlotSPF function. This is
+%accomplished by concatenating the strains into one long column vector. The
+%spf strains are stored in a cell array, each cell hold the set of spf
+%strains for each hkl
+
+strains_spf = {};
+% for(i=1:size(hkls,2))
+%     for(j=1:length(t1))
+%         if(j==1)
+%         	strains_spf(i) = {reshape(strains(j,i,:),1,size(strains,3))'};
+%         else
+%             strains_spf(i) = {[strains_spf{i};reshape(strains(j,i,:),1,size(strains,3))']};
+%         end
+%     end
+% end
+for(i=1:size(hkls,2))
+    for(j=1:length(t1))
+        if(j==1)
+        	strains_spf(i) = {strains(:,i,j)};
+        else
+            strains_spf(i) = {[strains_spf{i};strains(:,i,j)]};
+        end
+    end
+end
+assignin('base','strains_spf',strains_spf);
+
+means = zeros(1,size(hkls,2));
+stdevs = zeros(1,size(hkls,2));
+medians = zeros(1,size(hkls,2));
+
+for(i=1:size(hkls,2))
+    means(i) = mean(strains_spf{i});
+    medians(i) = median(strains_spf{i});
+    stdevs(i) = std(strains_spf{i});
+end
+
+%Asks user if they want to create strain pole figure, stres pole figure or
+%both
+
+choice = menu('Pole Figure Choices','Create Strain Pole','Create Stress Pole','Create Both');
+
+if(choice==0)
+    return;
+end
+
+if(choice==1)
+    %plots SPF
+    for(i=1:size(hkls,2))
+        figure
+        PlotSPF(scVectors{i}',strains_spf{i},'DataRange',[-.005,.005]);
+        title(sprintf('SPF - (%d,%d,%d)',hkls(1,i),hkls(2,i),hkls(3,i)));      
+        
+       
+        ch = gca;
+        set(ch,'CameraUpVector',[0,1,0]);
+        
+        assignin('base','children',ch);
+    end
+end
+
+if(choice == 2 || choice == 3)
+    [t1,t2] = uigetfile({'*.mat';'*.txt'},'Choose HKL Modulus Descriptor File');
+    
+    if(isempty(t1))
+        return
+    end
+    
+    E_hkls = load(fullfile(t2,t1)); %column vector format, in GPa
+    if(length(E_hkls) < size(hkls,2))
+        msgbox('Not enough HKL Moduli for each hkl present in refinement data');
+        return;
+    elseif(length(E_hkls) > size(hkls,2))
+        msgbox(sprintf('More HKL Moduli in descriptor fiole than present in refinement data, use first %f?',size(hkls,2)));
+        choice = menu('','Yes','No');
+        if(choice == 0 || choice == 2)
+            return;
+        elseif(choice == 1)
+            E_hkls = E_hkls(1:size(hkls,2));
+        end
+    end
+    
+    stress_spf = cell(size(strains_spf));
+    
+    for(i=1:size(hkls,2))
+        stress_spf(i) = {strains_spf{i}.*1000.*E_hkls(i)}; %times 1000 to convert to MPa
+    end
+    
+    if(choice == 3)
+        for(i=1:size(hkls,2))
+            figure
+            PlotSPF(scVectors{i}',strains_spf{i},'DataRange',[-.005,.005]);
+            title(sprintf('SPF - (%d,%d,%d)',hkls(1,i),hkls(2,i),hkls(3,i)));
+        end
+    end
+    
+    for(i=1:size(hkls,2))
+        figure
+        PlotSPF(scVectors{i}',stress_spf{i},'DataRange',[-500,500]);
+        title(sprintf('StrPF - (%d,%d,%d)',hkls(1,i),hkls(2,i),hkls(3,i)));
+    end
+    
+end
+
+% --------------------------------------------------------------------
+function menu_batchcalc_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_batchcalc (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+[t1,t2] = uigetfile('*.mat','Select Image Bin Data Files','Multiselect','On');
+
+if(isempty(t1))
+    return
+end
+
+
+initParms = [str2double(get(handles.edit_parmA,'String')),str2double(get(handles.edit_parmB,'String')),str2double(get(handles.edit_parmC,'String'))];
+popval = get(handles.popupmenu_type,'Value');
+
+type = '';
+switch(popval)
+    case(1)
+        type = 'cubic';
+    case(2)
+        type = 'hexagonal';
+    case(3)
+        type = 'trigonal';
+    case(4)
+        type = 'tetragonal';
+    case(5)
+        type = 'orthorhombic';
+    case(6)    
+        type = 'monoclinic';
+end
+    
+%PREPARES HKL DATA FOR PEAK FINDING
+hkls = getHKLs(type);
+    
+s=sprintf('Lattice Type = %s\n\nhkl''s=\n\n',type);
+for(jj=1:size(hkls,2))
+    s = [s,sprintf('%d%d%d\n',hkls(1,jj),hkls(2,jj),hkls(3,jj))];
+end
+s = [s,sprintf('\nType in the hkls considered for max finding as csv (eg 100,101,200)')];
+prompt = {s};
+
+title = 'Choose hkl''s for Max Finding';
+def = {'100,110,200,211'};
+answer = inputdlg(prompt,title,1,def);
+
+inputHkls = str2num(answer{1});
+
+handles.hkl_mask = zeros(1,size(hkls,2));
+
+for(i=1:length(inputHkls))
+    for(jj=1:size(hkls,2))
+        if(inputHkls(i)==str2double([num2str(hkls(1,jj)),num2str(hkls(2,jj)),num2str(hkls(3,jj))]))
+            handles.hkl_mask(jj)=1;
+        end
+    end
+end 
+    
+%ASKS FOR FILE STEM FOR SAVING REFINEMENT DATA FILES
+title = 'Choose File Stem';
+prompt = {'Choose File Stem'};
+def = {'refinementData_'};
+answer = inputdlg(prompt,title,1,def);
+
+filestem = answer{1};
+
+%PERFORMS PEAK FINDING AND FITTING FOR EACH DATA FILE
+tprogress = 0;
+hbar = waitbar(tprogress,'');
+% set(hbar,'WindowStyle','modal');
+for(ttt=1:length(t1))
+    waitbar(tprogress,hbar,sprintf('Processing Bin Data for Image #%d',ttt));
+    figure(hbar);
+    %LOADS THE FILE DATA
+    tempFilename = [t2,t1{ttt}];        
+    x = load(tempFilename);
+
+    set(handles.label_filepath,'String',['Input Filepath: ',tempFilename]);
+    set(handles.edit_filename,'String',tempFilename);
+    set(handles.edit_binNum,'String','1');
+    
+    handles.DATA_INTENSITY = [];
+    handles.DATA_DSPACING = [];
+    handles.DATA_2THETA = [];
+
+    handles.DATA_MAXES = [,];
+    handles.binDATA = [];
+
+    handles.DATA_INITSPACING = [];
+    handles.numBins = 0;
+    handles.DATA_FIT = {};
+       
+
+    set(handles.edit_filename,'String',tempFilename);
+    set(handles.edit_binNum,'String','1');
+
+    handles.numBins = size(x.binData,2)/3;  
+    
+    handles.DATA = struct(...
+    'intensity',cell(handles.numBins,1),...
+    'dspacing',cell(handles.numBins,1),...
+    'theta2',cell(handles.numBins,1),...
+    'energy',cell2mat(x.binData(end,1)),...
+    'maxes',cell(handles.numBins,1),...
+    'a',[],...
+    'b',[],...
+    'c',[],...
+    'resid',[],...
+    'theta_fit',[],...
+    'dspacing_fit',[],...
+    'data_fit',cell(handles.numBins,1));
+
+%     assignin('base','hdata',handles.DATA);
+    disp(handles.numBins);
+    handles.binNum = str2double(get(handles.edit_binNum,'String'));
+
+    set(handles.text_numBins,'String',['# of bins = ',num2str(handles.numBins)]);
+    
+    handles.binDATA = cell2mat(x.binData(2:end-2,:));
+
+    for(i=1:handles.numBins)
+        handles.DATA(i).intensity = cell2mat(x.binData(2:end-2,3*(i-1)+1));
+        handles.DATA(i).theta2 = cell2mat(x.binData(2:end-2,3*(i-1)+2));
+        handles.DATA(i).dspacing = cell2mat(x.binData(2:end-2,3*(i-1)+3));
+    end
+%     assignin('base','hdata2',handles.DATA);
+    handles.DATA_INTENSITY = cell2mat(x.binData(2:end-2,3*(handles.binNum-1)+1));    
+    handles.DATA_2THETA = cell2mat(x.binData(2:end-2,3*(handles.binNum-1)+2));
+    handles.DATA_DSPACING = cell2mat(x.binData(2:end-2,3*(handles.binNum-1)+3));
+    handles.ENERGY = cell2mat(x.binData(end,1));
+%     disp(handles.ENERGY);
+    set(handles.edit_energy,'String',num2str(handles.ENERGY));
+    handles.loaded = 1;
+    
+    handles.DATA_INITSPACING = [];    
+
+    [handles.DATA_INITSPACING,~] = PlaneSpacings(initParms,type,getHKLs(type),keV2Angstrom(handles.ENERGY));
+
+    handles.maxParams.Imin = 0.15*max(handles.DATA_INTENSITY);
+    handles.maxParams.Imax = max(handles.DATA_INTENSITY);
+    handles.maxParams.SpacingMin = 0.05;
+    handles.Override = 1;
+    
+    guidata(hObject,handles);
+    handles = guidata(hObject);
+    
+    %PERFORMS GLOBAL MAX CALC
+    menu_calcmaxes_Callback(hObject, eventdata, handles);
+    handles = guidata(hObject);
+    
+    %PERFORMS FITS
+    menu_calcfitparams_Callback(hObject, eventdata, handles)
+    handles = guidata(hObject);    
+    
+    %SAVES DATA (USING USER DEFINED FILE STEM)
+    refinement_data = handles.DATA;
+    save(fullfile(t2,filestem,num2str(ttt),'.mat'),'refinement_data');
+    disp(['File ',fullfile(t2,filestem,num2str(ttt),'.mat'),' Saved Successfully']);
+    tprogress = ttt/length(t1);
+    guidata(hObject,handles);
+end
+
+delete(hbar);
+
+disp('BATCH CALCULATIONS COMPLETE');

@@ -22,7 +22,7 @@ function varargout = unpacker(varargin)
 
 % Edit the above text to modify the response to help unpacker
 
-% Last Modified by GUIDE v2.5 09-Jun-2015 11:30:06
+% Last Modified by GUIDE v2.5 13-Oct-2015 13:28:23
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -87,7 +87,7 @@ guidata(hObject, handles);
 % UIWAIT makes unpacker wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
-
+    
 % --- Outputs from this function are returned to the command line.
 function varargout = unpacker_OutputFcn(hObject, eventdata, handles) 
 % varargout  cell array for returning output args (see VARARGOUT);
@@ -127,8 +127,8 @@ function button_open_Callback(hObject, eventdata, handles)
 % hObject    handle to button_open (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-[t1,t2] = uigetfile({'*.ge2','GE2 File (*.ge2)';'*.*','All Files (*.*)'},'Select File');
-handles.ifilename = [t2,t1];
+[t1,t2] = uigetfile({'*.ge2','GE2 File (*.ge2)';'*.ge3','GE3 File (*.ge3)';'*.*','All Files (*.*)'},'Select File');
+handles.ifilename = fullfile(t2,t1);
 
 if(length(t1)~=1)
     set(handles.edit_filepath,'String',handles.ifilename);
@@ -384,6 +384,8 @@ else
     set(handles.checkbox_split,'Enable','on');
 end
 
+guidata(hObject,handles);
+
 
 function edit_fnumber_Callback(hObject, eventdata, handles)
 % hObject    handle to edit_fnumber (see GCBO)
@@ -454,10 +456,10 @@ if(handles.fileExist==1 && handles.pathExist==1)
                 data = fread(ifstream,[handles.rows handles.cols],format);
                 
                 if(get(handles.checkbox_split,'Value')==1)
-                ofilename = [handles.ofilepath,'\',handles.stem1,num2str(j,['%0',num2str(handles.digits1),'.0f']),...
-        handles.stem2,num2str(k,['%0',num2str(handles.digits2),'.0f']),'.tiff'];
+                ofilename = fullfile(handles.ofilepath,[handles.stem1,num2str(j,['%0',num2str(handles.digits1),'.0f']),...
+        handles.stem2,num2str(k,['%0',num2str(handles.digits2),'.0f']),'.tiff']);
                 else
-                    ofilename = [handles.ofilepath,'\',handles.stem1,num2str(i,['%0',num2str(handles.digits1),'.0f']),'.tiff'];
+                    ofilename = fullfile(handles.ofilepath,[handles.stem1,num2str(i,['%0',num2str(handles.digits1),'.0f']),'.tiff']);
                 end
     
                 ofstream = fopen(ofilename, 'w');
@@ -484,7 +486,7 @@ if(handles.fileExist==1 && handles.pathExist==1)
             ifstream = fopen(handles.ifilename,'r','n');
             fseek(ifstream,handles.header+(handles.fnumber-1)*handles.rows*handles.cols*mult,'bof');
             data = fread(ifstream,[handles.rows handles.cols],format);
-            ofilename = [handles.ofilepath,'\',handles.stem1,num2str((handles.fnumber-1),['%0',num2str(handles.digits1),'.0f']),'.tiff'];
+            ofilename = fullfile(handles.ofilepath,[handles.stem1,num2str((handles.fnumber-1),['%0',num2str(handles.digits1),'.0f']),'.tiff']);
             
             ofstream = fopen(ofilename, 'w');
             fwrite(ofstream, zeros(handles.rows+handles.cols,1), format(2:end));
@@ -500,6 +502,7 @@ if(handles.fileExist==1 && handles.pathExist==1)
     end
     
 end
+guidata(hObject,handles);
 
 % --- Executes on button press in button_close.
 function button_close_Callback(hObject, eventdata, handles)
@@ -756,3 +759,138 @@ else
     handles.pathExist = 0;
 end
 guidata(hObject,handles);
+
+
+% --------------------------------------------------------------------
+function menu_options_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_options (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menu_batch_header_remove_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_batch_header_remove (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+[t1,t2] = uigetfile({'*.ge2';'*.ge3'},'Select Files','MultiSelect','on');
+assignin('base','t1',t1);
+if(~ischar(t2))
+    return;
+end
+
+if(~iscell(t1))
+    disp('Select more than one file please, otherwise use standard unpacking');
+    return;
+end
+
+s1 = uigetdir('Choose Output Directory');
+if(~ischar(s1))
+    return;
+end
+
+title = 'Choose File Stem';
+prompt = {'Choose File Stem'};
+def = {'im_'};
+answer = inputdlg(prompt,title,1,def);
+
+if(isempty(answer))
+    return;
+end
+
+switch(get(handles.popup_datatype,'Value'))
+    case(1)
+        format = '*uint8';
+    case(2)
+        format = '*uint16';
+    case(3)
+        format = '*uint32';
+    case(4)
+        format = '*uint64';
+    case(5)
+        format = '*int8';
+    case(6)
+        format = '*int16';
+    case(7)
+        format = '*int32';
+    case(8)
+        format = '*int64';
+end   
+
+for(i=1:size(t1,2))
+    fIn = fopen(fullfile(t2,t1{i}),'r');
+    fseek(fIn,handles.header,'bof');
+    data = fread(fIn,[handles.rows handles.cols],format);
+        
+    fOut = fopen(fullfile(s1,[answer{1},num2str(i,'%04.0f'),'.nhd']),'w');
+    fwrite(fOut,data(:,:),format(2:end));
+    
+    fclose(fIn);
+    fclose(fOut);
+    disp(sprintf('File %d Complete',i));
+end
+
+disp('UNPACKING COMPLETE');
+
+
+% --------------------------------------------------------------------
+function menu_addheader_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_addheader (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+[t1,t2] = uigetfile('*.*','Select GE2/3 Files','Multiselect','On');
+
+if(~ischar(t1) && ~iscell(t1))
+    return
+end
+
+len = 1;
+if(iscell(t1))
+    len = size(t1,2);
+end
+
+im = cell(len,1);
+wb = waitbar(0,'Loading XRD Data');
+type = zeros(len,1);
+for(i=1:len)
+    fi = fopen(fullfile(t2,t1{i}));
+    s = dir(fullfile(t2,t1{i}));
+    
+    if(s.bytes > 2048*2048*2)
+        im{i} = fread(fi,[2048 2048],'*int32');
+        type(i) = 32;
+    else
+        im{i} = fread(fi,[2048 2048],'*uint16');
+        type(i) = 16;
+    end
+    
+    fclose(fi);
+    waitbar(i/len,wb,'Loading XRD Data');
+end
+close(wb);
+
+[s1] = uigetdir();
+
+if(~ischar(s1))
+    return
+end
+
+wb = waitbar(0,'Saving XRD Data');
+for(i=1:len)
+    if(type(i)==32)
+        fo = fopen(fullfile(s1,[t1{i},'.wh']),'w');
+        fwrite(fo,ones(handles.header,1));
+        fwrite(fo,im{i},'int32');
+        fclose(fo);
+    elseif(type(i)==16)
+        fo = fopen(fullfile(s1,[t1{i},'.wh']),'w');
+        fwrite(fo,ones(handles.header,1));
+        fwrite(fo,im{i},'uint16');
+        fclose(fo);
+    end    
+    
+    waitbar(i/len,wb,'Saving XRD Data');
+end
+close(wb);

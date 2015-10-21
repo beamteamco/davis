@@ -10,7 +10,7 @@ function varargout = xrViewer_v1(varargin)
 %      given property value pairs. Unrecognized properties are passed via
 %      varargin to xrViewer_v1_OpeningFcn.  This calling syntax produces a
 %      warning when there is an existing singleton*.
-%
+%4
 %      XRVIEWER_V1('CALLBACK') and XRVIEWER_V1('CALLBACK',hObject,...) call the
 %      local function named CALLBACK in XRVIEWER_V1.M with the given input
 %      arguments.
@@ -22,7 +22,7 @@ function varargout = xrViewer_v1(varargin)
 
 % Edit the above text to modify the response to help xrViewer_v1
 
-% Last Modified by GUIDE v2.5 23-Jun-2015 09:53:56
+% Last Modified by GUIDE v2.5 19-Aug-2015 16:35:39
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -74,6 +74,7 @@ handles.darkNum = [0];
 handles.loaded = 0;
 handles.count=0;
 handles.directory = '1';
+
 %bin related handles
 handles.binDir = [];
 handles.binStem = 'binout_';
@@ -98,8 +99,6 @@ set(handles.axes_left,'UIContextMenu',handles.plot_men1);
 set(handles.axes_right,'UIContextMenu',handles.plot_men2);
 set(handles.axes_spec,'UIContextMenu',handles.plot_men3);
 set(gcf,'name','XRay Viewer and Data Analyzer')
-% set(handles.button_conv1,'String','pc <-> 2\theta');
-
 
 sIM = imread('no_image.png');
 
@@ -120,8 +119,11 @@ set(handles.axes_spec,'Units','normalized');
 set(handles.axes_spec,'OuterPosition',[0,0,1,1]);
 axes(handles.axes_spec)
 axis square        
+
 % Update handles structure
 guidata(hObject, handles);
+% setUIProperties_xrViewer(hObject,handles)
+
 
 % UIWAIT makes xrViewer_v1 wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -148,8 +150,8 @@ function edit_indexL_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of edit_indexL as a double
 
 if(~isempty(str2double(get(handles.edit_indexL,'String'))))
-    if(handles.count == 0)
-        
+    if(handles.count == 0 || isempty(handles.count))
+        set(handles.edit_indexL,'String',num2str(handles.imageIndexL));
     elseif(str2double(get(handles.edit_indexL,'String'))>=handles.count)
         set(handles.edit_indexL,'String',num2str(handles.count-1));
         handles.imageIndexL = handles.count-1;
@@ -191,8 +193,8 @@ function edit_indexR_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of edit_indexR as a double
 
 if(~isempty(str2double(get(handles.edit_indexR,'String'))))
-    if(handles.count == 0)
-        
+    if(handles.count == 0 || isempty(handles.count))
+        set(handles.edit_indexR,'String',num2str(handles.imageIndexR));
     elseif(str2double(get(handles.edit_indexR,'String'))>=handles.count)
         set(handles.edit_indexR,'String',num2str(handles.count-1));
         handles.imageIndexR = handles.count-1;
@@ -438,9 +440,17 @@ if(length(handles.directory)~=1)
 
 
     ct=1;
-    for i=1:length(handles.D)
-        if(~isempty(strfind(char({handles.D(i).name}),handles.stem)))
-            t(ct) = {handles.D(i).name};
+    hidden=0;
+    
+    for(i=1:length(handles.D)) %code needed for removing hidden '.' files
+        if(handles.D(i).name(1)=='.')
+            handles.D(i).name(1)='';
+            hidden=hidden+1;
+        end
+    end
+    for i=1:length(handles.D)-hidden
+        if(~isempty(strfind(char({handles.D(i+hidden).name}),handles.stem)))
+            t(ct) = {handles.D(i+hidden).name};
             ct=ct+1;
         end    
     end
@@ -453,8 +463,24 @@ if(length(handles.directory)~=1)
 
     for i=1:handles.count
     %     disp([handles.directory,'\',handles.imageNames{i,1}])
-        handles.images(i) = {ReadInGE([handles.directory,'\',handles.imageNames{i}])};
-        disp([handles.directory,'\',handles.imageNames{i}])
+    try
+        handles.images(i) = {double(imread(fullfile(handles.directory,handles.imageNames{i}),'tiff'))};
+    catch
+        disp('Image not tiff image, opening as data');
+        d = dir(fullfile(handles.directory,handles.imageNames{i}));
+        
+        if((d.bytes/(2048*2048)==2))
+            handles.images(i) = {ReadInGE(fullfile(handles.directory,handles.imageNames{i}))};
+        end
+        if((d.bytes/(2048*2048)==4))
+            ifs = fopen(fullfile(handles.directory,handles.imageNames{i}),'r');
+            handles.images(i) = {double(fread(ifs,[2048,2048],'*int32'))};
+            fclose(ifs);
+        end
+    end
+%         tempp = handles.images(i);
+%         assignin('base','assignedImage',tempp)
+        disp(fullfile(handles.directory,handles.imageNames{i}))
     end
 
     if(handles.loaded==0)
@@ -485,8 +511,11 @@ if(length(handles.directory)~=1)
     end
 
 
+%     assignin('base','assignedImages',handles.images)
     %plots the figures
     updatePlots(hObject,handles);
+    %assignin('base','loaded_images',handles.images);
+    set(handles.label_directory,'String',['Current Directory = ',handles.directory,'\']);
 end
 guidata(hObject,handles)
 
@@ -556,10 +585,12 @@ guidata(hObject,handles)
 
 
 % --------------------------------------------------------------------
-function Untitled_1_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_1 (see GCBO)
+function untitled0_Callback(hObject, eventdata, handles)
+% hObject    handle to untitled0 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+
 
 
 % --------------------------------------------------------------------
@@ -581,7 +612,8 @@ function button_debug_Callback(hObject, eventdata, handles)
 % hObject    handle to button_debug (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-radialCompute(hObject,handles);
+setUIProperties_xrViewer(hObject,handles)
+guidata(hObject,handles)
 
 
 % --- Executes on mouse press over axes background.
@@ -592,8 +624,8 @@ function axes_left_ButtonDownFcn(hObject, eventdata, handles)
 
 
 % --------------------------------------------------------------------
-function Untitled_5_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_5 (see GCBO)
+function men_v1_Callback(hObject, eventdata, handles)
+% hObject    handle to men_v1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 temp = figure();
@@ -614,8 +646,8 @@ function plot_men1_Callback(hObject, eventdata, handles)
 
 
 % --------------------------------------------------------------------
-function Untitled_10_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_10 (see GCBO)
+function men_v3_Callback(hObject, eventdata, handles)
+% hObject    handle to men_v3 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 temp = figure();
@@ -634,8 +666,8 @@ else
 end
 
 % --------------------------------------------------------------------
-function Untitled_9_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_9 (see GCBO)
+function men_v2_Callback(hObject, eventdata, handles)
+% hObject    handle to men_v2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 temp = figure();
@@ -1365,6 +1397,7 @@ function menu_binpath_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 handles.binDir = uigetdir('','Chose bin output file directory');
+set(handles.label_saveDir,'String',handles.binDir);
 if(length(handles.binDir)~=1)
     prompt = {'File Stem','File Extension'};
     def = {handles.binStem,handles.binExten};
@@ -1528,8 +1561,8 @@ guidata(hObject,handles)
 
 
 % --------------------------------------------------------------------
-function Untitled_14_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_14 (see GCBO)
+function men_s3_Callback(hObject, eventdata, handles)
+% hObject    handle to men_s3 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 x = getimage(handles.axes_spec);
@@ -1549,8 +1582,8 @@ else
     msgbox('Please export non-plot images');
 end
 % --------------------------------------------------------------------
-function Untitled_13_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_13 (see GCBO)
+function men_s2_Callback(hObject, eventdata, handles)
+% hObject    handle to men_s2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 x = getimage(handles.axes_right);
@@ -1570,8 +1603,8 @@ else
 end
 
 % --------------------------------------------------------------------
-function Untitled_12_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_12 (see GCBO)
+function men_s1_Callback(hObject, eventdata, handles)
+% hObject    handle to men_s1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 x = getimage(handles.axes_left);
@@ -1604,3 +1637,275 @@ function menu_larparmrefine_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 xrViewer_LatParmRefine();
+
+
+% --------------------------------------------------------------------
+function Untitled_16_Callback(hObject, eventdata, handles)
+% hObject    handle to untitled0 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menu_saveParam_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_saveParam (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%order will be directory, stem, extention, dark numbers, normalize filepath,
+%left index, right index, angle, spread, centerx, centery, radiusU,
+%radiusL,  image#
+
+filename = uiputfile({'*.parm','Parameters File (*.parm)'},'Save Parameters');
+
+dstring = get(handles.edit_dimages,'String');
+dstring(dstring==',')='$';
+outData = {get(handles.edit_directory,'String'),...
+        get(handles.edit_stem,'String'),...
+        get(handles.edit_exten,'String'),...
+        dstring,...
+        get(handles.edit_normFile,'String'),...
+        get(handles.edit_indexL,'String'),...
+        get(handles.edit_indexR,'String'),...
+        get(handles.edit_energy,'String'),...
+        get(handles.edit_distance,'String'),...
+        get(handles.edit_pixel,'String'),...
+        get(handles.edit_exposure,'String'),...
+        get(handles.edit_normOffset,'String'),...
+        get(handles.edit_angle,'String'),...
+        get(handles.edit_spread,'String'),...
+        get(handles.edit_x,'String'),...
+        get(handles.edit_y,'String'),...
+        get(handles.edit_radius,'String'),...
+        get(handles.edit_radius2,'String'),...
+        get(handles.edit_radNum,'String'),...
+        get(handles.edit_bins,'String')};
+
+if(isnumeric(filename)==0)
+    writetable(cell2table(outData),filename,'WriteVariableNames',0,'FileType','text');
+end
+
+
+% --------------------------------------------------------------------
+function menu_openParam_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_openParam (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+[t1,t2] = uigetfile({'*.parm','Parameters File (*.parm)'},'Open Parameters');
+filename=[t2,t1];
+disp(filename)
+%opens the sequence .dat file and loads it into the uitable
+if(isnumeric(filename)==0)
+    fid=fopen(filename);
+    inData = textscan(fid,'%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s','Delimiter',',');
+    fclose(fid);
+
+
+    dstring = cell2mat(inData{1,4});
+    dstring(dstring=='$')=',';
+    set(handles.edit_stem,'String',cell2mat(inData{1,2}))
+    set(handles.edit_exten,'String',cell2mat(inData{1,3}))
+    set(handles.edit_dimages,'String',dstring)
+    set(handles.edit_normFile,'String',cell2mat(inData{1,5}))
+    set(handles.edit_indexL,'String',cell2mat(inData{1,6}))
+    set(handles.edit_indexR,'String',cell2mat(inData{1,7}))
+    set(handles.edit_energy,'String',cell2mat(inData{1,8}))
+    set(handles.edit_distance,'String',cell2mat(inData{1,9}))
+    set(handles.edit_pixel,'String',cell2mat(inData{1,10}))
+    set(handles.edit_exposure,'String',cell2mat(inData{1,11}))
+    set(handles.edit_normOffset,'String',cell2mat(inData{1,12}))
+    set(handles.edit_angle,'String',cell2mat(inData{1,13}))
+    set(handles.edit_spread,'String',cell2mat(inData{1,14}))
+    set(handles.edit_x,'String',cell2mat(inData{1,15}))
+    set(handles.edit_y,'String',cell2mat(inData{1,16}))
+    set(handles.edit_radius,'String',cell2mat(inData{1,17}))
+    set(handles.edit_radius2,'String',cell2mat(inData{1,18}))
+    set(handles.edit_radNum,'String',cell2mat(inData{1,19}))
+    set(handles.edit_bins,'String',cell2mat(inData{1,20}))
+    
+    
+    handles.directory = cell2mat(inData{1,1});
+    extenL = length(get(handles.edit_exten,'String'));
+
+    if(length(handles.directory)~=1 || ~isempty(handles.directory))
+        set(handles.edit_directory,'String',handles.directory);
+        handles.D=dir(handles.directory);
+        stemEnd=-1;
+
+        for i=1:length(handles.D)
+            if(handles.D(i).name(1)~='.')
+                for j=1:length(handles.D(i).name)
+                    if(handles.D(i).name(j)=='0')
+                        stemEnd = j-1;
+                        handles.stem = handles.D(i).name(1:stemEnd);
+                        handles.numLength = length(handles.D(i).name)-stemEnd-extenL; %5 is for file extension (.tiff)
+                        set(handles.edit_stem,'String',handles.stem);
+                        break;
+                    end
+                end
+                if(stemEnd~=-1)
+                    break;
+                end
+            end
+        end
+        edit_dimages_Callback(hObject, eventdata, handles)
+    end
+
+    disp('Parameters Loaded')
+    guidata(hObject,handles);
+end
+
+
+% --------------------------------------------------------------------
+function menu_binall_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_binall (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+[t1] = uigetdir('Choose Bin Data Destination Folder');
+
+if(~ischar(t1))
+    return
+end
+
+prompt = {'File Stem','# of Bins'};
+
+title = 'Choose Output File Stem';
+def = {'binData','72'};
+
+answer = inputdlg(prompt,title,1,def);
+
+if(isempty(answer))
+    return
+end
+
+set(handles.checkbox_vout,'Value',1);            
+setappdata(handles.axes_spec,'type',3);
+
+binData = {};
+
+if(get(handles.button_conv1,'UserData')==0)
+    radiusU = str2double(get(handles.edit_radius,'String'));
+    radiusL = str2double(get(handles.edit_radius2,'String'));
+elseif(get(handles.button_conv1,'UserData')==1)
+    radiusU = tan(str2double(get(handles.edit_radius,'String'))/(180/pi()))/(pxLength/dist);
+    radiusL = tan(str2double(get(handles.edit_radius2,'String'))/(180/pi()))/(pxLength/dist);
+end
+        
+angle = str2double(get(handles.edit_angle,'String'));
+bins = str2double(answer{2});
+cX = str2double(get(handles.edit_x,'String'));
+cY = str2double(get(handles.edit_y,'String'));
+        
+for(j=1:handles.count)
+    if(isempty(find(handles.darkNum==j-1,1)))
+        image = handles.images{j};
+        binData={};
+        for(i=0:bins-1)
+            sp2 = 360/bins;
+            params = [angle+sp2*i, sp2/2, radiusU, cX, cY, radiusL];
+            [im,thetas,d_spacing] = radialCompute(handles,image,0,params,0);
+%             disp(['Bin #',num2str(i+1),' completed'])
+
+            binData = [binData,[{[num2str(angle+sp2*i-sp2/2),'° to ',num2str(angle+sp2*i+sp2/2),'°','intensity'],'2theta ','d-spacing'};num2cell(im),num2cell(thetas'),num2cell(d_spacing');...
+                {'beam energy','',''};...
+            num2cell(str2double(get(handles.edit_energy,'String'))),{'',''}]];
+%             disp(sprintf('Saving bin #%d',(i+1)));
+        end
+
+        filename = [t1,'\',[answer{1},'_Image',num2str(j),'.mat']];
+        save(filename,'binData');
+        disp(['Image #',num2str(j),' Completed and Data Saved']);
+    end
+end
+disp('All Images Binned');
+
+
+% --------------------------------------------------------------------
+function menu_tilt_correction_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_tilt_correction (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if(handles.loaded==1)
+    prompt = {'Rotation angle of tilting plane ()','Angle of detector tilt in plane ()','Center X','Center Y'};
+    dlg_title = 'Detector Tilt Correction Parameters';
+    num_lines = 1;
+    def = {'-28.0315','-0.4975',get(handles.edit_x,'String'),get(handles.edit_y,'String')};
+    answer = inputdlg(prompt,dlg_title,num_lines,def);
+    
+    if(isempty(answer))
+        return
+    end
+    
+    tpa = str2double(answer{1});
+    dtpa = str2double(answer{2});
+    cx = str2double(answer{3});
+    cy = str2double(answer{4});
+    
+    outdir = uigetdir('Choose Ouput Save Directory');
+    
+    if(~ischar(outdir))
+        return
+    end
+%     imagesc(TiltPlaneCorrection(image,-28,-15,1024,1024));
+
+    fname_new = cell(handles.count,1);
+    
+    for(i=1:handles.count)
+        fname = [outdir,'\',handles.imageNames{i}];
+        fname_new(i) = {[fname(1:end-5),'.corrected.tiff']};
+        
+        disp(sprintf('\nCalculating Correction for Image #%d',i));
+        tic
+        im = handles.images{i};
+        imc = TiltPlaneCorrection(im,tpa,dtpa,cx,cy);
+        
+%         if(i==7)
+%             assignin('base','imrea',handles.images{1});
+%             assignin('base','im',im);
+%             assignin('base','imc',imc);
+%         end
+
+        disp(sprintf('Correction for Image #%d Complete. Elapsed Time=%5.2f',i,toc));
+        
+        ofstream = fopen(fname_new{i}, 'w');
+        fwrite(ofstream, imc,'uint16');
+        fclose(ofstream);
+        
+%         imwrite(imc,fname_new{i},'tiff');
+        disp(sprintf('Image #%d Saved',i));
+    end
+    disp('IMAGE CORRECTION COMPLETE');
+else
+    msgbox('No Images Loaded');
+end
+
+
+% --------------------------------------------------------------------
+function menu_options_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_options (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function menu_auto_intensity_scale_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_auto_intensity_scale (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.scale_left_U = max(max(handles.images{handles.imageIndexL}));
+handles.scale_left_L = min(min(handles.images{handles.imageIndexL}));
+handles.scale_left_L =0;
+set(handles.edit_scaleLeftU,'String',num2str(handles.scale_left_U));
+set(handles.edit_scaleLeftL,'String',num2str(handles.scale_left_L));
+
+handles.scale_right_U = max(max(handles.images{handles.imageIndexR}));
+handles.scale_right_L = min(min(handles.images{handles.imageIndexR}));
+handles.scale_right_L = 0;
+set(handles.edit_scaleRightU,'String',num2str(handles.scale_right_U));
+set(handles.edit_scaleRightL,'String',num2str(handles.scale_right_L));
+
+updatePlots(hObject,handles);
+guidata(hObject,handles)

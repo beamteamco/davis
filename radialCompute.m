@@ -13,7 +13,7 @@ pxLength = 10^(-6) * str2double(get(handles.edit_pixel,'String'));
 dist = str2double(get(handles.edit_distance,'String'))/1000;
 % disp(dist)
 if(isLine == 1)
-    %calculates 1d plot along radial line at specific theta
+    %calculates 1D plot along radial line at specific theta
     dR = handles.dR;
 
     r=f_params(6):dR:f_params(3);
@@ -21,21 +21,21 @@ if(isLine == 1)
     theta2 = atan(r*pxLength/dist)*180/pi();
 %     disp(theta2)
     lambda = h * c / ( 1000 * beamEnergy * e );
-    d_spacing = lambda / 2 ./ sin((theta2*pi()/180) / 2) * 1e10;
+%     d_spacing = lambda / 2 ./ sin((theta2*pi()/180) / 2) * 1e10;
+    d_spacing = 1e10 * lambda./(2.*sin((theta2/2).*pi()./180));
     
-    pxX = floor(r*cosd(f_params(1)))+f_params(4);
-    pxY = floor(-r*sind(f_params(1)))+f_params(5);
+    pxX = ceil(r*cosd(f_params(1)))+f_params(4);
+    pxY = ceil(-r*sind(f_params(1)))+(2048-f_params(5));
     
     
 %     disp(pxX)
 %     disp(pxY)
     for(i=1:length(r))
-        if(floor(pxX(i)) > 2048 || floor(pxX(i)) < 1 || floor(pxY(i)) > 2048 || floor(pxY(i)) < 1)
-            output(i) = -1;
+        if(pxX(i) > 2048 || pxX(i) < 1 || pxY(i) > 2048 || pxY(i) < 1)
+            output(i) = 0;
         else
             output(i) = inputImage(pxY(i),pxX(i));
-        end
-        
+        end        
     end
     
     area = sum(dR.*output); %units = intensity*pixel
@@ -73,7 +73,8 @@ else
     thetas2 = atan(r*pxLength/dist)*180/pi();
     
     lambda = h * c / ( 1000 * beamEnergy * e );
-    d_spacings = lambda / 2 ./ sin((thetas2*pi()/180) / 2) * 1e10;
+%     d_spacings = lambda / 2 ./ sin((thetas2*pi()/180) / 2) * 1e10;
+    d_spacings = 1e10 * lambda./(2.*sin((thetas2/2).*pi()./180));
 %     d_spacings(d_spacings==Inf())=0;
 %     disp(d_spacings)
     
@@ -92,15 +93,19 @@ else
 %     end
 
 %linear algebra method, much much faster
-    pxX = floor(r'*cosd(thetas)+f_params(4));
-    pxY = floor(-r'*sind(thetas)+f_params(5));
+    pxX = ceil(r'*cosd(thetas)+f_params(4));
+    pxY = ceil(-r'*sind(thetas)+(2048-f_params(5)));
 %     wb = waitbar(0,'Calculating...');
 %     tot = length(r)*length(thetas);
+
+
+    %tempOutput = distributed(zeros(length(r),length(thetas)));
+    tempOutput = zeros(length(r),length(thetas));
 
     for(i=1:length(r))
         for(j=1:length(thetas))
             if(pxX(i,j) > 2048 || pxX(i,j) < 1 || pxY(i,j) > 2048 || pxY(i,j) < 1)
-                tempOutput(i,j) = -1;
+                tempOutput(i,j) = 0;
             else
                 tempOutput(i,j) = inputImage(pxY(i,j),pxX(i,j));
 %             output(i) = inputImage(floor(pxX(i)),floor(pxY(i)));
@@ -108,6 +113,7 @@ else
 %             waitbar(((j*(i-1))+j)/tot,wb);
         end
     end
+   
     %^^ rows are increment in radius, column increments in (dtheta)
     
 %     integral3d = tempOutput*thetas';
