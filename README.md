@@ -13,4 +13,4 @@ Visualization and data refinement routines in MATALB for synchrotron or neutron 
  3. RUN `xrViewer_v1.m` to open the application. The Unpacker Tool and Lattice Parameter Refinement Tool are available from the menu within the xrViewer application. To use them standalone, RUN the `xrViewer_LatParmRefine.m` and `unpacker.m` files respectively.
  
 
-For more detailed information, see the [Documentation](https://github.com/beamteamco/davis/wiki/davis-documentation-v-1.1.0)
+For more detailed information, see the [Documentation](https://github.com/beamteamco/davis/wiki/davis-Documentation-v1.1.0)
