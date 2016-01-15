@@ -1814,7 +1814,7 @@ for(j=1:handles.count)
 %             disp(sprintf('Saving bin #%d',(i+1)));
         end
 
-        filename = [t1,'\',[answer{1},'_Image',num2str(j),'.mat']];
+        filename = fullfile(t1,[answer{1},'_Image',num2str(j),'.mat']);
         save(filename,'binData');
         disp(['Image #',num2str(j),' Completed and Data Saved']);
     end
@@ -1854,7 +1854,7 @@ if(handles.loaded==1)
     fname_new = cell(handles.count,1);
     
     for(i=1:handles.count)
-        fname = [outdir,'\',handles.imageNames{i}];
+        fname = fullfile(outdir,handles.imageNames{i});
         fname_new(i) = {[fname(1:end-5),'.corrected.tiff']};
         
         disp(sprintf('\nCalculating Correction for Image #%d',i));

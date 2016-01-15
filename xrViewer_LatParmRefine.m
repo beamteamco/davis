@@ -2098,7 +2098,9 @@ prompt = {s};
 title = 'Choose hkl''s for Max Finding';
 def = {'100,110,200,211'};
 answer = inputdlg(prompt,title,1,def);
-
+if(isempty(answer))
+    return
+end
 inputHkls = str2num(answer{1});
 
 handles.hkl_mask = zeros(1,size(hkls,2));
