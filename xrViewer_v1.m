@@ -22,7 +22,7 @@ function varargout = xrViewer_v1(varargin)
 
 % Edit the above text to modify the response to help xrViewer_v1
 
-% Last Modified by GUIDE v2.5 19-Aug-2015 16:35:39
+% Last Modified by GUIDE v2.5 18-Jan-2016 12:01:08
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -1909,3 +1909,77 @@ set(handles.edit_scaleRightL,'String',num2str(handles.scale_right_L));
 
 updatePlots(hObject,handles);
 guidata(hObject,handles)
+
+
+% --------------------------------------------------------------------
+function menu_openIM_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_openIM (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+[t1,t2] = uigetfile('*.*','Select Image Files','Multiselect','On');
+
+if(~ischar(t1) && ~iscell(t1))
+    return
+end
+
+len = 1;
+if(iscell(t1))
+    len = size(t1,2);
+end
+
+handles.count = len;
+for i=1:handles.count
+    %     disp([handles.directory,'\',handles.imageNames{i,1}])
+    try
+        handles.images(i) = {double(imread(fullfile(handles.directory,handles.imageNames{i}),'tiff'))};
+    catch
+        disp('Image not tiff image, opening as data');
+        d = dir(fullfile(t2,t1{i}));
+        
+        if((d.bytes/(2048*2048)==2))
+            handles.images(i) = {ReadInGE(fullfile(t2,t1{i}))};
+        end
+        if((d.bytes/(2048*2048)==4))
+            ifs = fopen(fullfile(t2,t1{i}),'r');
+            handles.images(i) = {double(fread(ifs,[2048,2048],'*int32'))};
+            fclose(ifs);
+        end
+    end
+%         tempp = handles.images(i);
+%         assignin('base','assignedImage',tempp)
+        disp(fullfile(t2,t1{i}))
+end
+
+    if(handles.loaded==0)
+        %creates the intial dark image
+        for i=1:length(handles.darkNum)
+            if(i==1)
+                temp = handles.images{handles.darkNum(i)+1};
+            else
+                temp = temp + handles.images{handles.darkNum(i)+1};
+            end
+        end
+        handles.dark = temp/length(handles.darkNum);
+        
+        handles.normVals = ones(1,handles.count);
+        
+        if(handles.count==1)
+            set(handles.edit_indexL,'String','0');
+            handles.imageIndexL = 0;
+            set(handles.edit_indexR,'String','0');
+            handles.imageIndexR = 0;
+        elseif(handles.count > 1)
+            set(handles.edit_indexL,'String','0');
+            handles.imageIndexL = 0;
+            set(handles.edit_indexR,'String','1');
+            handles.imageIndexR = 1;
+        end
+        handles.loaded=1;
+    end
+
+%     assignin('base','assignedImages',handles.images)
+    %plots the figures
+    updatePlots(hObject,handles);
+    %assignin('base','loaded_images',handles.images);
+    set(handles.label_directory,'String',['Current Directory = ',handles.directory,'\']);
