@@ -22,7 +22,7 @@ function varargout = xrViewer_v1(varargin)
 
 % Edit the above text to modify the response to help xrViewer_v1
 
-% Last Modified by GUIDE v2.5 18-Jan-2016 12:01:08
+% Last Modified by GUIDE v2.5 18-Jan-2016 16:49:29
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -269,7 +269,11 @@ function edit_dimages_Callback(hObject, eventdata, handles)
 
 if(~isempty(str2num(get(handles.edit_dimages,'String'))))
     temp = str2num(get(handles.edit_dimages,'String'));
+else
+    set(handles.edit_dimages,'String','0');
+    temp = str2num(get(handles.edit_dimages,'String'));
 end
+
 flag=0;
 for(i=1:length(temp))
     if(temp(i) >= handles.count || temp(i) < 0)
@@ -1800,7 +1804,11 @@ cY = str2double(get(handles.edit_y,'String'));
         
 for(j=1:handles.count)
     if(isempty(find(handles.darkNum==j-1,1)))
-        image = handles.images{j};
+        if(get(handles.checkbox_subdark,'Value')==1)
+            image = handles.images{j} - handles.dark;
+        else
+            image = handles.images{j};
+        end
         binData={};
         for(i=0:bins-1)
             sp2 = 360/bins;
@@ -1929,10 +1937,22 @@ if(iscell(t1))
 end
 
 handles.count = len;
+handles.images={};
+
+handles.directory = t2;
+handles.D = dir(handles.directory);
+handles.imageNames = t1;    
+
+if(len==1)
+    temp = {t1};
+    clear(t1);
+    t1 = temp;
+end
 for i=1:handles.count
     %     disp([handles.directory,'\',handles.imageNames{i,1}])
     try
-        handles.images(i) = {double(imread(fullfile(handles.directory,handles.imageNames{i}),'tiff'))};
+%         disp(fullfile(handles.directory,t1{i}));
+        handles.images(i) = {double(imread(fullfile(handles.directory,t1{i})))};
     catch
         disp('Image not tiff image, opening as data');
         d = dir(fullfile(t2,t1{i}));
@@ -1951,6 +1971,9 @@ for i=1:handles.count
         disp(fullfile(t2,t1{i}))
 end
 
+    handles.count = len;
+    set(handles.text_count,'String',['Count: ',num2str(handles.count)]);
+    
     if(handles.loaded==0)
         %creates the intial dark image
         for i=1:length(handles.darkNum)
@@ -1983,3 +2006,5 @@ end
     updatePlots(hObject,handles);
     %assignin('base','loaded_images',handles.images);
     set(handles.label_directory,'String',['Current Directory = ',handles.directory,'\']);
+    
+    guidata(hObject,handles)
