@@ -99,6 +99,13 @@ if(handles.loaded == 1)
             imagespec = imageR-imageL;
         elseif(get(handles.button_imcSum,'Value')==1)
             imagespec = getSummedImage(handles);
+        elseif(get(handles.button_imcMaxOA,'Value')==1)
+            if(get(handles.checkbox_subdark2,'Value')==1)
+                imagespec = maxOverAllImages(handles.images) - handles.dark;
+            else
+                imagespec = maxOverAllImages(handles.images);
+            end
+            
         end
 
         setappdata(handles.axes_spec,'type',1);

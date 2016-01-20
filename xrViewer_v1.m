@@ -22,7 +22,7 @@ function varargout = xrViewer_v1(varargin)
 
 % Edit the above text to modify the response to help xrViewer_v1
 
-% Last Modified by GUIDE v2.5 18-Jan-2016 16:49:29
+% Last Modified by GUIDE v2.5 20-Jan-2016 12:27:03
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -517,7 +517,7 @@ if(length(handles.directory)~=1)
     end
 
 
-%     assignin('base','assignedImages',handles.images)
+    assignin('base','assignedImages',handles.images)
     %plots the figures
     updatePlots(hObject,handles);
     %assignin('base','loaded_images',handles.images);
@@ -1560,6 +1560,10 @@ elseif(get(handles.button_imcImage,'Value')==1)
     set(handles.checkbox_subdark2,'Enable','on');
     set(handles.checkbox_average,'Enable','off');
     set(handles.checkbox_norm3,'Enable','on');
+elseif(get(handles.button_imcMaxOA,'Value')==1)
+    set(handles.checkbox_subdark2,'Enable','on');
+    set(handles.checkbox_average,'Enable','off');
+    set(handles.checkbox_norm3,'Enable','off');
 end
 
 updatePlots(hObject,handles);
@@ -2012,3 +2016,14 @@ end
     set(handles.label_directory,'String',['Current Directory = ',handles.directory,'\']);
     
     guidata(hObject,handles)
+
+
+% --- Executes on button press in button_imcSum.
+function button_imcSum_Callback(hObject, eventdata, handles)
+% hObject    handle to button_imcSum (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of button_imcSum
+updatePlots(hObject,handles);
+guidata(hObject,handles)
