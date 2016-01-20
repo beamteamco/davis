@@ -474,9 +474,11 @@ if(length(handles.directory)~=1)
         d = dir(fullfile(handles.directory,handles.imageNames{i}));
         
         if((d.bytes/(2048*2048)==2))
+            disp('UINT16 Detected');
             handles.images(i) = {ReadInGE(fullfile(handles.directory,handles.imageNames{i}))};
         end
         if((d.bytes/(2048*2048)==4))
+            disp('INT32 Detected');
             ifs = fopen(fullfile(handles.directory,handles.imageNames{i}),'r');
             handles.images(i) = {double(fread(ifs,[2048,2048],'*int32'))};
             fclose(ifs);
@@ -1958,10 +1960,11 @@ for i=1:handles.count
         d = dir(fullfile(t2,t1{i}));
         
         if((d.bytes/(2048*2048)==2))
-            disp('UINT16 Deteced')
+            disp('UINT16 Detected');
             handles.images(i) = {ReadInGE(fullfile(t2,t1{i}))};
         end
         if((d.bytes/(2048*2048)==4))
+            disp('INT32 Detected');
             ifs = fopen(fullfile(t2,t1{i}),'r');
             handles.images(i) = {double(fread(ifs,[2048,2048],'*int32'))};
             fclose(ifs);
@@ -2005,7 +2008,7 @@ end
 %     assignin('base','assignedImages',handles.images)
     %plots the figures
     updatePlots(hObject,handles);
-    %assignin('base','loaded_images',handles.images);
+    assignin('base','loaded_images',handles.images);
     set(handles.label_directory,'String',['Current Directory = ',handles.directory,'\']);
     
     guidata(hObject,handles)
