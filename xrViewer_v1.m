@@ -1958,6 +1958,7 @@ for i=1:handles.count
         d = dir(fullfile(t2,t1{i}));
         
         if((d.bytes/(2048*2048)==2))
+            disp('UINT16 Deteced')
             handles.images(i) = {ReadInGE(fullfile(t2,t1{i}))};
         end
         if((d.bytes/(2048*2048)==4))
