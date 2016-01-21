@@ -1,5 +1,6 @@
 function [image] = getSummedImage(handles)
 ct=1;
+h = waitbar(0,'Computing Summed Image');
 for(i=1:handles.count)
     if(get(handles.checkbox_subdark2,'Value')==1)
         if(get(handles.checkbox_norm3,'Value')==1)
@@ -45,7 +46,8 @@ for(i=1:handles.count)
                 end
             end
         end
-    end        
+    end 
+    waitbar(i/(handles.count),h,'Computing Summed Image');
 end
 
 %         disp(ct-1)
@@ -53,4 +55,5 @@ if(get(handles.checkbox_average,'Value')==1)
     summ = summ./(ct-1);
 end
 
+close(h);
 image = summ;
