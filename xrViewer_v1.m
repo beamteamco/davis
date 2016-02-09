@@ -1962,6 +1962,7 @@ for i=1:handles.count
     catch
         disp('Image not tiff image, opening as data');
         d = dir(fullfile(t2,t1{i}));
+        disp(sprintf('Nuber of Bytes: %i',d.bytes))
         
         if((d.bytes/(2048*2048)==2))
             disp('UINT16 Detected');
