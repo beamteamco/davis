@@ -451,6 +451,7 @@ if(handles.fileExist==1 && handles.pathExist==1)
             j=0;
             k=0;
             tic
+            h = waitbar(0,'');
             for(i=0:handles.fcount-1)
                 fseek(ifstream,handles.header+i*handles.rows*handles.cols*mult,'bof');
                 data = fread(ifstream,[handles.rows handles.cols],format);
@@ -463,11 +464,11 @@ if(handles.fileExist==1 && handles.pathExist==1)
                 end
     
                 ofstream = fopen(ofilename, 'w');
-                fwrite(ofstream, zeros(handles.rows+handles.cols,1), format(2:end));
+%                 fwrite(ofstream, zeros(handles.rows+handles.cols,1), format(2:end));
                 fwrite(ofstream, data(:,:), format(2:end));
                 disp(['Frame #',num2str(i+1),' completed...']);
                 fclose(ofstream);
-                                              
+                waitbar(i/(handles.fcount-1),h,sprintf('Frame #%i Extracted and Saved',i));                           
                 k=k+1;
                 if(mod(k,handles.snumber)==0)
                     j=j+1;
@@ -476,6 +477,7 @@ if(handles.fileExist==1 && handles.pathExist==1)
             end
             fclose(ifstream);
             disp(['Time Elapsed = ',num2str(toc)]);
+            close(h);
             msgbox('Unpacking completed.');
         else
             msgbox('Non-integer number of frames. Please change parameters.');
@@ -489,7 +491,7 @@ if(handles.fileExist==1 && handles.pathExist==1)
             ofilename = fullfile(handles.ofilepath,[handles.stem1,num2str((handles.fnumber-1),['%0',num2str(handles.digits1),'.0f']),'.tiff']);
             
             ofstream = fopen(ofilename, 'w');
-            fwrite(ofstream, zeros(handles.rows+handles.cols,1), format(2:end));
+%             fwrite(ofstream, zeros(handles.rows+handles.cols,1), format(2:end));
             fwrite(ofstream, data(:,:), format(2:end));
             disp(['Frame #',num2str(handles.fnumber),' completed...']);
             fclose(ofstream);

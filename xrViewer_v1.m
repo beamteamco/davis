@@ -1967,12 +1967,14 @@ for i=1:handles.count
         if((d.bytes/(2048*2048)==2))
             disp('UINT16 Detected');
             handles.images(i) = {ReadInGE(fullfile(t2,t1{i}))};
-        end
-        if((d.bytes/(2048*2048)==4))
+        elseif((d.bytes/(2048*2048)==4))
             disp('INT32 Detected');
             ifs = fopen(fullfile(t2,t1{i}),'r');
             handles.images(i) = {double(fread(ifs,[2048,2048],'*int32'))};
             fclose(ifs);
+        else
+            disp('Data Type Not Supported');
+            return;
         end
     end
 %         tempp = handles.images(i);
