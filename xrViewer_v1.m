@@ -22,7 +22,7 @@ function varargout = xrViewer_v1(varargin)
 
 % Edit the above text to modify the response to help xrViewer_v1
 
-% Last Modified by GUIDE v2.5 20-Jan-2016 12:27:03
+% Last Modified by GUIDE v2.5 09-Feb-2016 20:36:50
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -2030,3 +2030,49 @@ function button_imcSum_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of button_imcSum
 updatePlots(hObject,handles);
 guidata(hObject,handles)
+
+
+% --------------------------------------------------------------------
+function menu_moa_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_moa (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+[t1,t2] = uigetfile('*.*','Select Image Files','Multiselect','On');
+
+if(~ischar(t1) && ~iscell(t1))
+    return
+end
+
+len = 1;
+if(iscell(t1))
+    len = size(t1,2);
+end
+
+temp = zeros(2048,2048);
+h = waitbar(0,'Computing Max Over All Images');
+for i=1:len
+    try
+        temp = max(temp,double(imread(fullfile(t2,t1{i}))));
+    catch
+        d = dir(fullfile(t2,t1{i}));        
+        if((d.bytes/(2048*2048)==2))
+             temp = max(temp,ReadInGE(fullfile(t2,t1{i})));
+        elseif((d.bytes/(2048*2048)==4))
+            ifs = fopen(fullfile(t2,t1{i}),'r');
+            temp = max(temp,double(fread(ifs,[2048,2048],'*int32')));
+            fclose(ifs);
+        else
+            disp('Data Type Not Supported');
+            return;
+        end
+        waitbar(i/len,h,'Computing Max Over All Images');
+    end
+        disp(fullfile(t2,t1{i}))
+end
+
+close(h)
+figure
+imagesc(temp);
+axis square
+colorbar
