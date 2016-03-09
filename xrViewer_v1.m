@@ -2076,3 +2076,15 @@ figure
 imagesc(temp);
 axis square
 colorbar
+
+
+[t1,t2] = uiputfile('*.ge2');
+
+if(~ischar(t1))
+    return
+end
+
+ofstream = fopen(fullfile(t2,t1), 'w');
+fwrite(ofstream, temp(:,:), 'uint16');
+fclose(ofstream);
+
