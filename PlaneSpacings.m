@@ -40,7 +40,7 @@ if strcmp(latticeType, 'cubic')
     for i = 1:size(hkls, 2)
         d(i)  = a/(sqrt(hkls(1, i)^2 + hkls(2, i)^2 + hkls(3, i)^2));
     end
-elseif strcmp(latticeType, 'hexagonal') | strcmp(latticeType, 'trigonal')
+elseif strcmp(latticeType, 'hexagonal') || strcmp(latticeType, 'trigonal')
     a = latticeParms(1);
     c = latticeParms(2);
     if size(hkls, 1) == 4
@@ -76,7 +76,7 @@ elseif strcmp(latticeType, 'monoclinic')
     a = latticeParms(1);
     b = latticeParms(2);
     c = latticeParms(3);
-    beta = latticeParms(4);
+    beta = latticeParms(5)
     for i = 1:size(hkls, 2)
         oneBydsq = 1/(sind(beta)^2)*...
             (hkls(1, i)^2/a^2 + ...

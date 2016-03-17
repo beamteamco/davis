@@ -22,7 +22,7 @@ function varargout = xrViewer_LatParmRefine(varargin)
 
 % Edit the above text to modify the response to help xrViewer_LatParmRefine
 
-% Last Modified by GUIDE v2.5 30-Jul-2015 18:58:09
+% Last Modified by GUIDE v2.5 16-Mar-2016 13:28:14
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -182,6 +182,9 @@ if(length(t1)~=1)
     'a',[],...
     'b',[],...
     'c',[],...
+    'alpha',[],...
+    'beta',[],...
+    'gamma',[],...
     'resid',[],...
     'theta_fit',[],...
     'dspacing_fit',[],...
@@ -210,7 +213,12 @@ if(length(t1)~=1)
     handles.loaded = 1;
     
     handles.DATA_INITSPACING = [];
-    initParms = [str2double(get(handles.edit_parmA,'String')),str2double(get(handles.edit_parmB,'String')),str2double(get(handles.edit_parmC,'String'))];
+    initParms = [str2double(get(handles.edit_parmA,'String')),...
+    str2double(get(handles.edit_parmB,'String')),...
+    str2double(get(handles.edit_parmC,'String')),...
+    str2double(get(handles.edit_parmAlpha,'String')),...
+    str2double(get(handles.edit_parmBeta,'String')),...
+    str2double(get(handles.edit_parmGamma,'String'))];
     popval = get(handles.popupmenu_type,'Value');
 
     type = '';
@@ -290,6 +298,9 @@ set(handles.text_maxnum,'String',['Max # = ',num2str(size(handles.DATA_MAXES,1))
 set(handles.text_parmA,'String',['a = ',num2str(handles.DATA(handles.binNum).a)]);
 set(handles.text_parmB,'String',['b = ',num2str(handles.DATA(handles.binNum).b)]);
 set(handles.text_parmC,'String',['c = ',num2str(handles.DATA(handles.binNum).c)]);
+set(handles.text_parmAlpha,'String',['alpha = ',num2str(handles.DATA(handles.binNum).alpha)]);
+set(handles.text_parmBeta,'String',['beta = ',num2str(handles.DATA(handles.binNum).beta)]);
+set(handles.text_parmGamma,'String',['gamma = ',num2str(handles.DATA(handles.binNum).gamma)]);
 set(handles.text_parmResid2,'String',num2str(handles.DATA(handles.binNum).resid));
 
 xrLatParmRefine_updatePlots(hObject,handles);
@@ -531,6 +542,7 @@ if(handles.loaded==1)
                         indexx = k;
                     end                
                 end
+
                 handles.DATA_MAXES(z,5) = str2double([num2str(hkls(1,indexx)),num2str(hkls(2,indexx)),num2str(hkls(3,indexx))]);
                 z=z+1;
             end 
@@ -708,7 +720,12 @@ function popupmenu_type_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns popupmenu_type contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from popupmenu_type
 handles.DATA_INITSPACING = [];
-initParms = [str2double(get(handles.edit_parmA,'String')),str2double(get(handles.edit_parmB,'String')),str2double(get(handles.edit_parmC,'String'))];
+initParms = [str2double(get(handles.edit_parmA,'String')),...
+    str2double(get(handles.edit_parmB,'String')),...
+    str2double(get(handles.edit_parmC,'String')),...
+    str2double(get(handles.edit_parmAlpha,'String')),...
+    str2double(get(handles.edit_parmBeta,'String')),...
+    str2double(get(handles.edit_parmGamma,'String'))];
 popval = get(handles.popupmenu_type,'Value');
 
 type = '';
@@ -753,7 +770,12 @@ function edit_parmA_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of edit_parmA as text
 %        str2double(get(hObject,'String')) returns contents of edit_parmA as a double
 handles.DATA_INITSPACING = [];
-initParms = [str2double(get(handles.edit_parmA,'String')),str2double(get(handles.edit_parmB,'String')),str2double(get(handles.edit_parmC,'String'))];
+initParms = [str2double(get(handles.edit_parmA,'String')),...
+    str2double(get(handles.edit_parmB,'String')),...
+    str2double(get(handles.edit_parmC,'String')),...
+    str2double(get(handles.edit_parmAlpha,'String')),...
+    str2double(get(handles.edit_parmBeta,'String')),...
+    str2double(get(handles.edit_parmGamma,'String'))];
 popval = get(handles.popupmenu_type,'Value');
 
 type = '';
@@ -798,7 +820,12 @@ function edit_parmB_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of edit_parmB as text
 %        str2double(get(hObject,'String')) returns contents of edit_parmB as a double
 handles.DATA_INITSPACING = [];
-initParms = [str2double(get(handles.edit_parmA,'String')),str2double(get(handles.edit_parmB,'String')),str2double(get(handles.edit_parmC,'String'))];
+initParms = [str2double(get(handles.edit_parmA,'String')),...
+    str2double(get(handles.edit_parmB,'String')),...
+    str2double(get(handles.edit_parmC,'String')),...
+    str2double(get(handles.edit_parmAlpha,'String')),...
+    str2double(get(handles.edit_parmBeta,'String')),...
+    str2double(get(handles.edit_parmGamma,'String'))];
 popval = get(handles.popupmenu_type,'Value');
 
 type = '';
@@ -843,7 +870,12 @@ function edit_parmC_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of edit_parmC as text
 %        str2double(get(hObject,'String')) returns contents of edit_parmC as a double
 handles.DATA_INITSPACING = [];
-initParms = [str2double(get(handles.edit_parmA,'String')),str2double(get(handles.edit_parmB,'String')),str2double(get(handles.edit_parmC,'String'))];
+initParms = [str2double(get(handles.edit_parmA,'String')),...
+    str2double(get(handles.edit_parmB,'String')),...
+    str2double(get(handles.edit_parmC,'String')),...
+    str2double(get(handles.edit_parmAlpha,'String')),...
+    str2double(get(handles.edit_parmBeta,'String')),...
+    str2double(get(handles.edit_parmGamma,'String'))];
 popval = get(handles.popupmenu_type,'Value');
 
 type = '';
@@ -1136,34 +1168,56 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
     %     disp(dspc_fit)
     end
 
-    a0 = str2double(get(handles.edit_parmA,'String'));
-    b0 = str2double(get(handles.edit_parmB,'String'));
-    c0 = str2double(get(handles.edit_parmC,'String'));
+    initParms = [str2double(get(handles.edit_parmA,'String')),...
+    str2double(get(handles.edit_parmB,'String')),...
+    str2double(get(handles.edit_parmC,'String')),...
+    str2double(get(handles.edit_parmAlpha,'String')),...
+    str2double(get(handles.edit_parmBeta,'String')),...
+    str2double(get(handles.edit_parmGamma,'String'))];
 
-    parms0 = [a0,b0,c0];
+
     hkls = [];
+    ct=1;
     for(i=1:size(handles.DATA_MAXES,1))
         tstring = num2str(handles.DATA_MAXES(i,5));
-        hkls(i,:) = [str2double(tstring(1)),str2double(tstring(2)),str2double(tstring(3))];
+        for(j=1:size(getHKLs(typeLatt),2))
+            temp1 = getHKLs(typeLatt);
+            temp2 = num2str(temp1(:,j)');
+            temp2(temp2 == ' ') = '';
+            if(str2double(tstring) == str2double(temp2))
+                hkls(ct,:) = temp1(:,j)';
+                ct = ct+1;
+            end
+        end
+%         hkls(i,:) = [str2double(tstring(1)),str2double(tstring(2)),str2double(tstring(3))];
     end
 
-    disp(hkls)
+%     hkls
     % disp(a0)
 
-    a0out = [0 0 0];
+    a0out = [0 0 0 0 0 0];
     ff = @(x)LatParmResid(x,tth_fit,keV2Angstrom(handles.ENERGY),hkls,typeLatt);
-    [a0out,a0resid,iterflag] = lsqnonlin(ff,parms0(1),2,4,options);
-    a0out(2:3)=0;
+    [a0out,a0resid,iterflag] = lsqnonlin(ff,initParms,1,5,options);
+    assignin('base','a0out',a0out);
+    assignin('base','a0resid',a0resid);
+    
+%     a0out(2:3)=0;
     set(handles.text_parmA,'String',['a = ',num2str(a0out(1))]);
     set(handles.text_parmB,'String',['b = ',num2str(a0out(2))]);
     set(handles.text_parmC,'String',['c = ',num2str(a0out(3))]);
+    set(handles.text_parmAlpha,'String',['alpha = ',num2str(a0out(4))]);
+    set(handles.text_parmBeta,'String',['beta = ',num2str(a0out(5))]);
+    set(handles.text_parmGamma,'String',['gamma = ',num2str(a0out(6))]);
     set(handles.text_parmResid2,'String',num2str(a0resid));
     
     handles.lattice_params(handles.binNum,1)=a0out(1);
     handles.lattice_params(handles.binNum,2)=a0out(2);
     handles.lattice_params(handles.binNum,3)=a0out(3);
+    handles.lattice_params(handles.binNum,4)=a0out(4);
+    handles.lattice_params(handles.binNum,5)=a0out(5);
+    handles.lattice_params(handles.binNum,6)=a0out(6);
     
-    assignin('base','a0resid',a0resid);
+    
 
     filename = [handles.filename(1:end-4),'_LarParmRefine.mat'];
     disp(filename)
@@ -1177,6 +1231,9 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
     handles.DATA(handles.binNum).a = a0out(1);
     handles.DATA(handles.binNum).b = a0out(2);
     handles.DATA(handles.binNum).c = a0out(3);
+    handles.DATA(handles.binNum).alpha = a0out(4);
+    handles.DATA(handles.binNum).beta = a0out(5);
+    handles.DATA(handles.binNum).gamma = a0out(6);
     handles.DATA(handles.binNum).theta_fit = tth_fit;
     handles.DATA(handles.binNum).data_fit = handles.DATA_FIT;
     handles.DATA(handles.binNum).resid = a0resid;
@@ -1226,6 +1283,9 @@ set(handles.text_maxnum,'String',['Max # = ',num2str(size(handles.DATA_MAXES,1))
 set(handles.text_parmA,'String',['a = ',num2str(handles.DATA(handles.binNum).a)]);
 set(handles.text_parmB,'String',['b = ',num2str(handles.DATA(handles.binNum).b)]);
 set(handles.text_parmC,'String',['c = ',num2str(handles.DATA(handles.binNum).c)]);
+set(handles.text_parmAlpha,'String',['alpha = ',num2str(handles.DATA(handles.binNum).alpha)]);
+set(handles.text_parmBeta,'String',['beta = ',num2str(handles.DATA(handles.binNum).beta)]);
+set(handles.text_parmGamma,'String',['gamma = ',num2str(handles.DATA(handles.binNum).gamma)]);
 set(handles.text_parmResid2,'String',num2str(handles.DATA(handles.binNum).resid));
 
 xrLatParmRefine_updatePlots(hObject,handles);
@@ -1268,6 +1328,9 @@ set(handles.text_maxnum,'String',['Max # = ',num2str(size(handles.DATA_MAXES,1))
 set(handles.text_parmA,'String',['a = ',num2str(handles.DATA(handles.binNum).a)]);
 set(handles.text_parmB,'String',['b = ',num2str(handles.DATA(handles.binNum).b)]);
 set(handles.text_parmC,'String',['c = ',num2str(handles.DATA(handles.binNum).c)]);
+set(handles.text_parmAlpha,'String',['alpha = ',num2str(handles.DATA(handles.binNum).alpha)]);
+set(handles.text_parmBeta,'String',['beta = ',num2str(handles.DATA(handles.binNum).beta)]);
+set(handles.text_parmGamma,'String',['gamma = ',num2str(handles.DATA(handles.binNum).gamma)]);
 set(handles.text_parmResid2,'String',num2str(handles.DATA(handles.binNum).resid));
     
 xrLatParmRefine_updatePlots(hObject,handles);
@@ -1397,6 +1460,10 @@ if(handles.Override == 0)
 
     answer = inputdlg(prompt,title,1,def);
 
+    if(isempty(answer))
+        return
+    end
+    
     inputHkls = str2num(answer{1});
 
     hkl_mask = zeros(1,size(hkls,2));
@@ -1600,6 +1667,9 @@ set(handles.text_maxnum,'String',['Max # = ',num2str(size(handles.DATA_MAXES,1))
 set(handles.text_parmA,'String',['a = ',num2str(handles.DATA(handles.binNum).a)]);
 set(handles.text_parmB,'String',['b = ',num2str(handles.DATA(handles.binNum).b)]);
 set(handles.text_parmC,'String',['c = ',num2str(handles.DATA(handles.binNum).c)]);
+set(handles.text_parmAlpha,'String',['alpha = ',num2str(handles.DATA(handles.binNum).alpha)]);
+set(handles.text_parmBeta,'String',['beta = ',num2str(handles.DATA(handles.binNum).beta)]);
+set(handles.text_parmGamma,'String',['gamma = ',num2str(handles.DATA(handles.binNum).gamma)]);
 set(handles.text_parmResid2,'String',num2str(handles.DATA(handles.binNum).resid));
 
 xrLatParmRefine_updatePlots(hObject,handles);
@@ -1699,29 +1769,48 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
         %     disp(dspc_fit)
         end
 
-        a0 = str2double(get(handles.edit_parmA,'String'));
-        b0 = str2double(get(handles.edit_parmB,'String'));
-        c0 = str2double(get(handles.edit_parmC,'String'));
+        initParms = [str2double(get(handles.edit_parmA,'String')),...
+    str2double(get(handles.edit_parmB,'String')),...
+    str2double(get(handles.edit_parmC,'String')),...
+    str2double(get(handles.edit_parmAlpha,'String')),...
+    str2double(get(handles.edit_parmBeta,'String')),...
+    str2double(get(handles.edit_parmGamma,'String'))];
 
-        parms0 = [a0,b0,c0];
         hkls = [];
+%         for(i=1:size(handles.DATA_MAXES,1))
+%             tstring = num2str(handles.DATA_MAXES(i,5));
+%             hkls(i,:) = [str2double(tstring(1)),str2double(tstring(2)),str2double(tstring(3))];
+%         end
+
+        ct=1;
         for(i=1:size(handles.DATA_MAXES,1))
             tstring = num2str(handles.DATA_MAXES(i,5));
-            hkls(i,:) = [str2double(tstring(1)),str2double(tstring(2)),str2double(tstring(3))];
+            for(j=1:size(getHKLs(typeLatt),2))
+                temp1 = getHKLs(typeLatt);
+                temp2 = num2str(temp1(:,j)');
+                temp2(temp2 == ' ') = '';
+                if(str2double(tstring) == str2double(temp2))
+                    hkls(ct,:) = temp1(:,j)';
+                    ct = ct+1;
+                end
+            end
+    %         hkls(i,:) = [str2double(tstring(1)),str2double(tstring(2)),str2double(tstring(3))];
         end
-
 %         disp(hkls)
         % disp(a0)
 
-        a0out = [0 0 0];
+        a0out = [0 0 0 0 0 0];
         ff = @(x)LatParmResid(x,tth_fit,keV2Angstrom(handles.ENERGY),hkls,typeLatt);
-        [a0out,a0resid,iterflag] = lsqnonlin(ff,parms0(1),2,4,options);     % using first param for cubic, lsq algorithm requires 
+        [a0out,a0resid,iterflag] = lsqnonlin(ff,initParms,2,4,options);     % using first param for cubic, lsq algorithm requires 
                                                                             % equation for every variable (a,b,c) even if unused
-        a0out(2:3)=0; % fix related to above (for cubic)
+%         a0out(2:3)=0; % fix related to above (for cubic)
         
         handles.lattice_params(handles.binNum,1)=a0out(1);
         handles.lattice_params(handles.binNum,2)=a0out(2);
         handles.lattice_params(handles.binNum,3)=a0out(3);
+        handles.lattice_params(handles.binNum,4)=a0out(4);
+        handles.lattice_params(handles.binNum,5)=a0out(5);
+        handles.lattice_params(handles.binNum,6)=a0out(6);
 
         assignin('base','a0resid',a0resid);
 
@@ -1736,6 +1825,9 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
         handles.DATA(handles.binNum).a = a0out(1);
         handles.DATA(handles.binNum).b = a0out(2);
         handles.DATA(handles.binNum).c = a0out(3);
+        handles.DATA(handles.binNum).alpha = a0out(4);
+        handles.DATA(handles.binNum).beta = a0out(5);
+        handles.DATA(handles.binNum).gamma = a0out(6);
         handles.DATA(handles.binNum).theta_fit = tth_fit;
         handles.DATA(handles.binNum).data_fit = handles.DATA_FIT;
         handles.DATA(handles.binNum).resid = a0resid;   
@@ -2066,7 +2158,13 @@ if(isempty(t1))
 end
 
 
-initParms = [str2double(get(handles.edit_parmA,'String')),str2double(get(handles.edit_parmB,'String')),str2double(get(handles.edit_parmC,'String'))];
+initParms = [str2double(get(handles.edit_parmA,'String')),...
+    str2double(get(handles.edit_parmB,'String')),...
+    str2double(get(handles.edit_parmC,'String')),...
+    str2double(get(handles.edit_parmAlpha,'String')),...
+    str2double(get(handles.edit_parmBeta,'String')),...
+    str2double(get(handles.edit_parmGamma,'String'))];
+
 popval = get(handles.popupmenu_type,'Value');
 
 type = '';
@@ -2220,3 +2318,157 @@ end
 delete(hbar);
 
 disp('BATCH CALCULATIONS COMPLETE');
+
+
+
+function edit_parmAlpha_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_parmAlpha (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_parmAlpha as text
+%        str2double(get(hObject,'String')) returns contents of edit_parmAlpha as a double
+
+handles.DATA_INITSPACING = [];
+initParms = [str2double(get(handles.edit_parmA,'String')),...
+    str2double(get(handles.edit_parmB,'String')),...
+    str2double(get(handles.edit_parmC,'String')),...
+    str2double(get(handles.edit_parmAlpha,'String')),...
+    str2double(get(handles.edit_parmBeta,'String')),...
+    str2double(get(handles.edit_parmGamma,'String'))];
+popval = get(handles.popupmenu_type,'Value');
+
+type = '';
+switch(popval)
+    case(1)
+        type = 'cubic';
+    case(2)
+        type = 'hexagonal';
+    case(3)
+        type = 'trigonal';
+    case(4)
+        type = 'tetragonal';
+    case(5)
+        type = 'orthorhombic';
+    case(6)    
+        type = 'monoclinic';
+end
+
+[handles.DATA_INITSPACING,~] = PlaneSpacings(initParms,type,getHKLs(type),keV2Angstrom(handles.ENERGY));
+xrLatParmRefine_updatePlots(hObject,handles); 
+guidata(hObject,handles);
+
+% --- Executes during object creation, after setting all properties.
+function edit_parmAlpha_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_parmAlpha (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_parmBeta_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_parmBeta (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_parmBeta as text
+%        str2double(get(hObject,'String')) returns contents of edit_parmBeta as a double
+
+handles.DATA_INITSPACING = [];
+initParms = [str2double(get(handles.edit_parmA,'String')),...
+    str2double(get(handles.edit_parmB,'String')),...
+    str2double(get(handles.edit_parmC,'String')),...
+    str2double(get(handles.edit_parmAlpha,'String')),...
+    str2double(get(handles.edit_parmBeta,'String')),...
+    str2double(get(handles.edit_parmGamma,'String'))];
+popval = get(handles.popupmenu_type,'Value');
+
+type = '';
+switch(popval)
+    case(1)
+        type = 'cubic';
+    case(2)
+        type = 'hexagonal';
+    case(3)
+        type = 'trigonal';
+    case(4)
+        type = 'tetragonal';
+    case(5)
+        type = 'orthorhombic';
+    case(6)    
+        type = 'monoclinic';
+end
+
+[handles.DATA_INITSPACING,~] = PlaneSpacings(initParms,type,getHKLs(type),keV2Angstrom(handles.ENERGY));
+xrLatParmRefine_updatePlots(hObject,handles); 
+guidata(hObject,handles);
+
+% --- Executes during object creation, after setting all properties.
+function edit_parmBeta_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_parmBeta (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function edit_parmGamma_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_parmGamma (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_parmGamma as text
+%        str2double(get(hObject,'String')) returns contents of edit_parmGamma as a double
+
+handles.DATA_INITSPACING = [];
+initParms = [str2double(get(handles.edit_parmA,'String')),...
+    str2double(get(handles.edit_parmB,'String')),...
+    str2double(get(handles.edit_parmC,'String')),...
+    str2double(get(handles.edit_parmAlpha,'String')),...
+    str2double(get(handles.edit_parmBeta,'String')),...
+    str2double(get(handles.edit_parmGamma,'String'))];
+popval = get(handles.popupmenu_type,'Value');
+
+type = '';
+switch(popval)
+    case(1)
+        type = 'cubic';
+    case(2)
+        type = 'hexagonal';
+    case(3)
+        type = 'trigonal';
+    case(4)
+        type = 'tetragonal';
+    case(5)
+        type = 'orthorhombic';
+    case(6)    
+        type = 'monoclinic';
+end
+
+[handles.DATA_INITSPACING,~] = PlaneSpacings(initParms,type,getHKLs(type),keV2Angstrom(handles.ENERGY));
+xrLatParmRefine_updatePlots(hObject,handles); 
+guidata(hObject,handles);
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_parmGamma_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_parmGamma (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
