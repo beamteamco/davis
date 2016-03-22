@@ -1809,7 +1809,7 @@ cX = str2double(get(handles.edit_x,'String'));
 cY = str2double(get(handles.edit_y,'String'));
         
 for(j=1:handles.count)
-    if(isempty(find(handles.darkNum==j-1,1)))
+    if(isempty(find(handles.darkNum==j-1,1)) || get(handles.checkbox_subdark,'Value')==0)
         if(get(handles.checkbox_subdark,'Value')==1)
             image = handles.images{j} - handles.dark;
         else

@@ -245,9 +245,9 @@ if(handles.loaded == 1)
                     [im,thetas,d_spacing] = radialCompute(handles,imagespec,0,params,0);
                     disp(['Bin #',num2str(i+1),' completed'])
                     
-                    binFig = figure('visible','off');
+%                     binFig = figure('visible','off');
                     
-                    set(binFig,'Position',[0,0,1200,900])
+%                     set(binFig,'Position',[0,0,1200,900])
                     if(~isempty(handles.binDir))
                         filename = [handles.binDir,'/',handles.binStem,num2str(i,'%03.0f'),handles.binExten];
                     else
@@ -267,16 +267,16 @@ if(handles.loaded == 1)
                         output2(i+1,:) = {'d-spacing (angstrom)','Intensity^2',['1D Intensity Profile \theta= ',num2str(angle+sp2*i-sp2/2),'° to ',num2str(angle+sp2*i+sp2/2),'°']};
                     end
                     
-                    ylabel('Intensity^2');
-                    title(['1D Intensity Profile \theta= ',num2str(angle+sp2*i-sp2/2),'° to ',num2str(angle+sp2*i+sp2/2),'°'])
-                    saveas(binFig,filename);  
+%                     ylabel('Intensity^2');
+%                     title(['1D Intensity Profile \theta= ',num2str(angle+sp2*i-sp2/2),'° to ',num2str(angle+sp2*i+sp2/2),'°'])
+%                     saveas(binFig,filename);  
                     
                     binData = [binData,[{[num2str(angle+sp2*i-sp2/2),'° to ',num2str(angle+sp2*i+sp2/2),'°','intensity'],'2theta ','d-spacing'};num2cell(im),num2cell(thetas'),num2cell(d_spacing');...
                         {'beam energy','',''};...
                     num2cell(str2double(get(handles.edit_energy,'String'))),{'',''}]];
-                    title('');
-                    ylim([0 120000])
-                    writeVideo(outputVideo,getframe(binFig));
+%                     title('');
+%                     ylim([0 120000])
+%                     writeVideo(outputVideo,getframe(binFig));
                 end
                 
                 set(handles.button_binPlus,'Enable','on');
