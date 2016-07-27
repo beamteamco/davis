@@ -22,7 +22,7 @@ function varargout = xrViewer_v1(varargin)
 
 % Edit the above text to modify the response to help xrViewer_v1
 
-% Last Modified by GUIDE v2.5 25-Mar-2016 14:50:18
+% Last Modified by GUIDE v2.5 26-Jul-2016 21:46:38
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -1581,16 +1581,21 @@ function men_s3_Callback(hObject, eventdata, handles)
 x = getimage(handles.axes_spec);
 % assignin('base','output',x);
 if(size(x,3)==1)
-        [t1,t2] = uiputfile({'*.tiff','TIFF File (*.tiff)'},'Save Sequence');
-        filename = [t2,t1];
-        disp(filename)
-        disp(length(t1))
-        if(length(t1)~=1)
-            fs = fopen(filename,'w');
-            fwrite(fs, x, 'uint16');
-            close(fs);
-            disp('File Saved Succesfully')
+        [t1,t2] = uiputfile({'*.tif','TIF File (*.tif)'},'Save Sequence');
+        if(~ischar(t1))
+            return
         end
+        filename = fullfile(t2,t1);
+        disp(filename) 
+        x = (x - (min(min(x))))./(max(max(x))-min(min(x)));
+        imwrite(uint16(x.*2^16),filename);
+        disp('File Saved Succesfully');
+%         if(length(t1)~=1)
+%             fs = fopen(filename,'w');
+%             fwrite(fs, x, 'uint16');
+%             close(fs);
+%             disp('File Saved Succesfully')
+%         end
 else
     msgbox('Please export non-plot images');
 end
@@ -1601,16 +1606,21 @@ function men_s2_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 x = getimage(handles.axes_right);
 if(size(x,3)==1)
-        [t1,t2] = uiputfile({'*.tiff','TIFF File (*.tiff)'},'Save Sequence');
-        filename = [t2,t1];
-        disp(filename)
-        disp(length(t1))
-        if(length(t1)~=1)
-            fs = fopen(filename,'w');
-            fwrite(fs, x, 'uint16');
-            close(fs);
-            disp('File Saved Succesfully')
+        [t1,t2] = uiputfile({'*.tif','TIF File (*.tif)'},'Save Sequence');
+        if(~ischar(t1))
+            return
         end
+        filename = fullfile(t2,t1);
+        disp(filename) 
+        x = (x - (min(min(x))))./(max(max(x))-min(min(x)));
+        imwrite(uint16(x.*2^16),filename);
+        disp('File Saved Succesfully');
+%         if(length(t1)~=1)
+%             fs = fopen(filename,'w');
+%             fwrite(fs, x, 'uint16');
+%             close(fs);
+%             disp('File Saved Succesfully')
+%         end
 else
     msgbox('Please export non-plot images');
 end
@@ -1622,16 +1632,21 @@ function men_s1_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 x = getimage(handles.axes_left);
 if(size(x,3)==1)
-        [t1,t2] = uiputfile({'*.tiff','TIFF File (*.tiff)'},'Save Sequence');
-        filename = [t2,t1];
-        disp(filename)
-        disp(length(t1))
-        if(length(t1)~=1)
-            fs = fopen(filename,'w');
-            fwrite(fs, x, 'uint16');
-            close(fs);
-            disp('File Saved Succesfully')
+        [t1,t2] = uiputfile({'*.tif','TIF File (*.tif)'},'Save Sequence');
+        if(~ischar(t1))
+            return
         end
+        filename = fullfile(t2,t1);
+        disp(filename) 
+        x = (x - (min(min(x))))./(max(max(x))-min(min(x)));
+        imwrite(uint16(x.*2^16),filename);
+        disp('File Saved Succesfully');
+%         if(length(t1)~=1)
+%             fs = fopen(filename,'w');
+%             fwrite(fs, x, 'uint16');
+%             close(fs);
+%             disp('File Saved Succesfully')
+%         end
 else
     msgbox('Please export non-plot images');
 end
@@ -1934,7 +1949,7 @@ function menu_openIM_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-[t1,t2] = uigetfile('*.*','Select Image Files','Multiselect','On');
+[t1,t2] = uigetfile({'*.tif','TIF File (*.tif)';'*.bin','Binary Data (2048x2048 uint16 or int32) (*.bin)'},'Multiselect','On');
 
 if(~ischar(t1) && ~iscell(t1))
     return
@@ -2101,3 +2116,50 @@ function menu_saveCurCalc_Callback(hObject, eventdata, handles)
 
 
 handles.tempSave
+
+
+% --------------------------------------------------------------------
+function menu_load_frWork_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_load_frWork (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+handles.images = evalin('base','images');
+handles.count = length(handles.images);
+handles.darkNum = [0];
+set(handles.text_count,'String',['Count: ',num2str(handles.count)]);
+
+if(handles.loaded==0)
+    %creates the intial dark image
+    for i=1:length(handles.darkNum)
+        if(i==1)
+            temp = handles.images{handles.darkNum(i)+1};
+        else
+            temp = temp + handles.images{handles.darkNum(i)+1};
+        end
+    end
+    handles.dark = temp/length(handles.darkNum);
+
+    handles.normVals = ones(1,handles.count);
+
+    if(handles.count==1)
+        set(handles.edit_indexL,'String','0');
+        handles.imageIndexL = 0;
+        set(handles.edit_indexR,'String','0');
+        handles.imageIndexR = 0;
+    elseif(handles.count > 1)
+        set(handles.edit_indexL,'String','0');
+        handles.imageIndexL = 0;
+        set(handles.edit_indexR,'String','1');
+        handles.imageIndexR = 1;
+    end
+    handles.loaded=1;
+end
+
+%     assignin('base','assignedImages',handles.images)
+    %plots the figures
+    updatePlots(hObject,handles);
+    assignin('base','loaded_images',handles.images);
+    set(handles.label_directory,'String',['Current Directory = ',handles.directory,'\']);
+    
+    guidata(hObject,handles)

@@ -131,7 +131,7 @@ else
 %             ylim('auto')
         end
         ylabel('Intensity^2');
-        title(['1D Intensity Profile \theta= ',num2str(f_params(1)-f_params(2)),'° to ',num2str(f_params(1)+f_params(2)),'°'])
+        title(['1D Intensity Profile \theta= ',num2str(thetas(1)),'° to ',num2str(thetas(end)),'°'])
         set(handles.axes_spec,'Units','normalized');
         set(handles.axes_spec,'OuterPosition',[0,0,1,1]);
         handles.radial2d = handles.axes_spec;
@@ -139,7 +139,7 @@ else
 
         figure
         ttt=(f_params(1)-f_params(2)):dTheta:(f_params(1)+f_params(2));
-        splot = surf(ttt,r,tempOutput)
+        splot = surf(thetas,r,tempOutput)
         ylabel('Radius (pixels)');
         xlabel('Azimuth Angle (°)')
         zlabel('Intensity')
@@ -149,7 +149,7 @@ else
         ylabel(colorbar,'Intensity');
 
         figure
-        imagesc(ttt,r,tempOutput,[handles.scale_spec_L handles.scale_spec_U])
+        imagesc(thetas,r,tempOutput,[handles.scale_spec_L handles.scale_spec_U])
         set(gca,'YDir','normal')
     %     plot(handles.axes_spec,r,output)
         title('2D Radial Unwrap')

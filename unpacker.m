@@ -79,7 +79,7 @@ set(handles.button_open,'CData',imread('icon_folder.png'));
 set(handles.button_save,'CData',imread('icon_folder.png'));
 set(gcf,'name','Unpacker Tool')
 set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),...
-    handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),'.tiff']);
+    handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),'.tif']);
 
 % Update handles structure
 guidata(hObject, handles);
