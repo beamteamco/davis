@@ -25,7 +25,7 @@ if(isLine == 1)
     d_spacing = 1e10 * lambda./(2.*sin((theta2/2).*pi()./180));
     
     pxX = ceil(r*cosd(f_params(1)))+f_params(4);
-    pxY = ceil(-r*sind(f_params(1)))+(2048-f_params(5));
+    pxY = ceil(2048-(r*sind(f_params(1)))+(2048-f_params(5)));
     
     
 %     disp(pxX)
@@ -94,7 +94,7 @@ else
 
 %linear algebra method, much much faster
     pxX = ceil(r'*cosd(thetas)+f_params(4));
-    pxY = ceil(-r'*sind(thetas)+(2048-f_params(5)));
+    pxY = ceil(2048-(r'*sind(thetas)+(2048-f_params(5))));
 %     wb = waitbar(0,'Calculating...');
 %     tot = length(r)*length(thetas);
 

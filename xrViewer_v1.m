@@ -22,7 +22,7 @@ function varargout = xrViewer_v1(varargin)
 
 % Edit the above text to modify the response to help xrViewer_v1
 
-% Last Modified by GUIDE v2.5 09-Feb-2016 20:36:50
+% Last Modified by GUIDE v2.5 25-Mar-2016 14:50:18
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -93,6 +93,9 @@ handles.resolutionH = 900;
 handles.vidFormat = '.avi';
 handles.vidFramerate = 5;
 handles.norm = [];
+
+handles.tempSave = {};
+
 setappdata(handles.axes_spec,'type',1);
 
 set(handles.axes_left,'UIContextMenu',handles.plot_men1);
@@ -2088,3 +2091,13 @@ ofstream = fopen(fullfile(t2,t1), 'w');
 fwrite(ofstream, temp(:,:), 'uint16');
 fclose(ofstream);
 
+
+
+% --------------------------------------------------------------------
+function menu_saveCurCalc_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_saveCurCalc (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+handles.tempSave
