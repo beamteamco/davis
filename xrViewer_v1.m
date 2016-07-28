@@ -1927,17 +1927,24 @@ function menu_auto_intensity_scale_Callback(hObject, eventdata, handles)
 % hObject    handle to menu_auto_intensity_scale (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles.scale_left_U = max(max(handles.images{handles.imageIndexL}));
-handles.scale_left_L = min(min(handles.images{handles.imageIndexL}));
-handles.scale_left_L =0;
+
+[hi, edges] = histcounts(reshape(handles.images{handles.imageIndexL+1},1,[]),'Normalization','cdf');
+handles.scale_left_U = edges(find(hi > 0.9,1,'first'));
+handles.scale_left_L = edges(find(hi > 0.1,1,'first'));
 set(handles.edit_scaleLeftU,'String',num2str(handles.scale_left_U));
 set(handles.edit_scaleLeftL,'String',num2str(handles.scale_left_L));
 
-handles.scale_right_U = max(max(handles.images{handles.imageIndexR}));
-handles.scale_right_L = min(min(handles.images{handles.imageIndexR}));
-handles.scale_right_L = 0;
+[hi, edges] = histcounts(reshape(handles.images{handles.imageIndexR+1},1,[]),'Normalization','cdf');
+handles.scale_right_U = edges(find(hi > 0.9,1,'first'));
+handles.scale_right_L = edges(find(hi > 0.1,1,'first'));
 set(handles.edit_scaleRightU,'String',num2str(handles.scale_right_U));
 set(handles.edit_scaleRightL,'String',num2str(handles.scale_right_L));
+
+[hi, edges] = histcounts(reshape(getimage(handles.axes_spec),1,[]),'Normalization','cdf');
+handles.scale_spec_U = edges(find(hi > 0.9,1,'first'));
+handles.scale_spec_L = edges(find(hi > 0.1,1,'first'));
+set(handles.edit_scaleSpecU,'String',num2str(handles.scale_spec_U));
+set(handles.edit_scaleSpecL,'String',num2str(handles.scale_spec_L));
 
 updatePlots(hObject,handles);
 guidata(hObject,handles)
@@ -1949,7 +1956,7 @@ function menu_openIM_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-[t1,t2] = uigetfile({'*.tif','TIF File (*.tif)';'*.bin','Binary Data (2048x2048 uint16 or int32) (*.bin)'},'Multiselect','On');
+[t1,t2] = uigetfile({'*.tif','TIF File (*.tif)';'*.bin','Binary Data (2048x2048 uint16 or int32) (*.bin)';'*.*','All Files (*.*)'},'Multiselect','On');
 
 if(~ischar(t1) && ~iscell(t1))
     return
@@ -2096,15 +2103,21 @@ axis square
 colorbar
 
 
-[t1,t2] = uiputfile('*.ge2');
+[t1,t2] = uiputfile({'*.tif','uint16 TIF Image (*.tif)';'.bin','Binary Data 64bit float (*.bin)'});
+[~,~,exten] = fileparts(t1);
 
 if(~ischar(t1))
     return
 end
 
-ofstream = fopen(fullfile(t2,t1), 'w');
-fwrite(ofstream, temp(:,:), 'uint16');
-fclose(ofstream);
+if(exten == '.bin')
+    ofstream = fopen(fullfile(t2,t1), 'w');
+    fwrite(ofstream, temp(:,:), 'float64');
+    fclose(ofstream);
+else
+    temp = (temp - (min(min(temp))))./(max(max(temp))-min(min(temp)));
+    imwrite(uint16(x.*2^16),fullfile(t2,t1),'tif');
+end
 
 
 

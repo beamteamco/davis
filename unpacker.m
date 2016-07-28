@@ -22,7 +22,7 @@ function varargout = unpacker(varargin)
 
 % Edit the above text to modify the response to help unpacker
 
-% Last Modified by GUIDE v2.5 13-Oct-2015 13:28:23
+% Last Modified by GUIDE v2.5 27-Jul-2016 18:59:00
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -79,7 +79,7 @@ set(handles.button_open,'CData',imread('icon_folder.png'));
 set(handles.button_save,'CData',imread('icon_folder.png'));
 set(gcf,'name','Unpacker Tool')
 set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),...
-    handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),'.tif']);
+    handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),'.bin']);
 
 % Update handles structure
 guidata(hObject, handles);
@@ -456,18 +456,33 @@ if(handles.fileExist==1 && handles.pathExist==1)
                 fseek(ifstream,handles.header+i*handles.rows*handles.cols*mult,'bof');
                 data = fread(ifstream,[handles.rows handles.cols],format);
                 
-                if(get(handles.checkbox_split,'Value')==1)
-                ofilename = fullfile(handles.ofilepath,[handles.stem1,num2str(j,['%0',num2str(handles.digits1),'.0f']),...
-        handles.stem2,num2str(k,['%0',num2str(handles.digits2),'.0f']),'.tiff']);
+                
+                exten = '';
+                if(get(handles.checkbox_tif,'Value')==1)
+                    exten = '.tif';
                 else
-                    ofilename = fullfile(handles.ofilepath,[handles.stem1,num2str(i,['%0',num2str(handles.digits1),'.0f']),'.tiff']);
+                    exten = '.bin';
+                end
+                
+                if(get(handles.checkbox_split,'Value')==1)
+                    ofilename = fullfile(handles.ofilepath,[handles.stem1,num2str(j,['%0',num2str(handles.digits1),'.0f']),...
+        handles.stem2,num2str(k,['%0',num2str(handles.digits2),'.0f']),exten]);
+                else
+                    ofilename = fullfile(handles.ofilepath,[handles.stem1,num2str(i,['%0',num2str(handles.digits1),'.0f']),exten]);
                 end
     
-                ofstream = fopen(ofilename, 'w');
-%                 fwrite(ofstream, zeros(handles.rows+handles.cols,1), format(2:end));
-                fwrite(ofstream, data(:,:), format(2:end));
+                if(get(handles.checkbox_tif,'Value')==1)
+                    data = double(data);
+                    data = (data - (min(min(data))))./(max(max(data))-min(min(data)));
+                    imwrite(uint16(data.*2^16),ofilename,'tif');
+                else
+                    ofstream = fopen(ofilename, 'w');
+    %                 fwrite(ofstream, zeros(handles.rows+handles.cols,1), format(2:end));
+                    fwrite(ofstream, data(:,:), format(2:end));                
+                    fclose(ofstream);
+                end
+                
                 disp(['Frame #',num2str(i+1),' completed...']);
-                fclose(ofstream);
                 waitbar(i/(handles.fcount-1),h,sprintf('Frame #%i Extracted and Saved',i));                           
                 k=k+1;
                 if(mod(k,handles.snumber)==0)
@@ -475,6 +490,7 @@ if(handles.fileExist==1 && handles.pathExist==1)
                     k=0;
                 end
             end
+            
             fclose(ifstream);
             disp(['Time Elapsed = ',num2str(toc)]);
             close(h);
@@ -488,13 +504,29 @@ if(handles.fileExist==1 && handles.pathExist==1)
             ifstream = fopen(handles.ifilename,'r','n');
             fseek(ifstream,handles.header+(handles.fnumber-1)*handles.rows*handles.cols*mult,'bof');
             data = fread(ifstream,[handles.rows handles.cols],format);
-            ofilename = fullfile(handles.ofilepath,[handles.stem1,num2str((handles.fnumber-1),['%0',num2str(handles.digits1),'.0f']),'.tiff']);
             
-            ofstream = fopen(ofilename, 'w');
-%             fwrite(ofstream, zeros(handles.rows+handles.cols,1), format(2:end));
-            fwrite(ofstream, data(:,:), format(2:end));
+            
+            exten = '';
+            if(get(handles.checkbox_tif,'Value')==1)
+                exten = '.tif';
+            else
+                exten = '.bin';
+            end
+                
+            ofilename = fullfile(handles.ofilepath,[handles.stem1,num2str((handles.fnumber-1),['%0',num2str(handles.digits1),'.0f']),exten]);
+            
+            if(get(handles.checkbox_tif,'Value')==1)
+                    data = double(data);
+                    data = (data - (min(min(data))))./(max(max(data))-min(min(data)));
+                    imwrite(uint16(data.*2^16),ofilename,'tif');
+            else
+                ofstream = fopen(ofilename, 'w');
+    %             fwrite(ofstream, zeros(handles.rows+handles.cols,1), format(2:end));
+                fwrite(ofstream, data(:,:), format(2:end));            
+                fclose(ofstream);
+            end
+            
             disp(['Frame #',num2str(handles.fnumber),' completed...']);
-            fclose(ofstream);
             
             fclose(ifstream);
             disp(['Time Elapsed = ',num2str(toc)]);
@@ -529,11 +561,18 @@ handles.snumber = str2double(get(handles.edit_splitnum,'String'));
 handles.digits1 = str2double(get(handles.edit_digits1,'String'));
 handles.digits2 = str2double(get(handles.edit_digits2,'String'));
 
+exten = '';
+if(get(handles.checkbox_tif,'Value')==1)
+    exten = '.tif';
+else
+    exten = '.bin';
+end
+            
 if(get(handles.checkbox_split,'Value')==1)
     set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),...
-        handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),'.tiff']);
+        handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),exten]);
 else
-    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),'.tiff']);
+    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),exten]);
 end
 guidata(hObject,handles);
 
@@ -564,11 +603,18 @@ handles.snumber = str2double(get(handles.edit_splitnum,'String'));
 handles.digits1 = str2double(get(handles.edit_digits1,'String'));
 handles.digits2 = str2double(get(handles.edit_digits2,'String'));
 
+exten = '';
+if(get(handles.checkbox_tif,'Value')==1)
+    exten = '.tif';
+else
+    exten = '.bin';
+end
+
 if(get(handles.checkbox_split,'Value')==1)
     set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),...
-        handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),'.tiff']);
+        handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),exten]);
 else
-    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),'.tiff']);
+    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),exten]);
 end
 guidata(hObject,handles);
 
@@ -587,11 +633,18 @@ handles.snumber = str2double(get(handles.edit_splitnum,'String'));
 handles.digits1 = str2double(get(handles.edit_digits1,'String'));
 handles.digits2 = str2double(get(handles.edit_digits2,'String'));
 
+exten = '';
+if(get(handles.checkbox_tif,'Value')==1)
+    exten = '.tif';
+else
+    exten = '.bin';
+end
+
 if(get(handles.checkbox_split,'Value')==1)
     set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),...
-        handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),'.tiff']);
+        handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),exten]);
 else
-    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),'.tiff']);
+    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),exten]);
 end
 guidata(hObject,handles);
 
@@ -624,11 +677,18 @@ handles.snumber = str2double(get(handles.edit_splitnum,'String'));
 handles.digits1 = str2double(get(handles.edit_digits1,'String'));
 handles.digits2 = str2double(get(handles.edit_digits2,'String'));
 
+exten = '';
+if(get(handles.checkbox_tif,'Value')==1)
+    exten = '.tif';
+else
+    exten = '.bin';
+end
+
 if(get(handles.checkbox_split,'Value')==1)
     set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),...
-        handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),'.tiff']);
+        handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),exten]);
 else
-    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),'.tiff']);
+    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),exten]);
 end
 guidata(hObject,handles);
 
@@ -662,11 +722,18 @@ handles.snumber = str2double(get(handles.edit_splitnum,'String'));
 handles.digits1 = str2double(get(handles.edit_digits1,'String'));
 handles.digits2 = str2double(get(handles.edit_digits2,'String'));
 
+exten = '';
+if(get(handles.checkbox_tif,'Value')==1)
+    exten = '.tif';
+else
+    exten = '.bin';
+end
+
 if(get(handles.checkbox_split,'Value')==1)
     set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),...
-        handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),'.tiff']);
+        handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),exten]);
 else
-    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),'.tiff']);
+    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),exten]);
 end
 guidata(hObject,handles);
 
@@ -700,11 +767,18 @@ handles.snumber = str2double(get(handles.edit_splitnum,'String'));
 handles.digits1 = str2double(get(handles.edit_digits1,'String'));
 handles.digits2 = str2double(get(handles.edit_digits2,'String'));
 
+exten = '';
+if(get(handles.checkbox_tif,'Value')==1)
+    exten = '.tif';
+else
+    exten = '.bin';
+end
+
 if(get(handles.checkbox_split,'Value')==1)
     set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),...
-        handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),'.tiff']);
+        handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),exten]);
 else
-    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),'.tiff']);
+    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),exten]);
 end
 guidata(hObject,handles);
 
@@ -896,3 +970,33 @@ for(i=1:len)
     waitbar(i/len,wb,'Saving XRD Data');
 end
 close(wb);
+
+
+% --- Executes on button press in checkbox_tif.
+function checkbox_tif_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_tif (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_tif
+
+handles.stem1 = get(handles.edit_stem1,'String');
+handles.stem2 = get(handles.edit_stem2,'String');
+handles.snumber = str2double(get(handles.edit_splitnum,'String'));
+handles.digits1 = str2double(get(handles.edit_digits1,'String'));
+handles.digits2 = str2double(get(handles.edit_digits2,'String'));
+
+exten = '';
+if(get(handles.checkbox_tif,'Value')==1)
+    exten = '.tif';
+else
+    exten = '.bin';
+end
+
+if(get(handles.checkbox_split,'Value')==1)
+    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),...
+        handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),exten]);
+else
+    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),exten]);
+end
+guidata(hObject,handles);
