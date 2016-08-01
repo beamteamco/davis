@@ -1928,13 +1928,18 @@ function menu_auto_intensity_scale_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-[hi, edges] = histcounts(reshape(handles.images{handles.imageIndexL+1},1,[]),'Normalization','cdf');
+tdark = handles.dark;
+if(get(handles.checkbox_subdark,'Value')==0)
+    tdark = 0;
+end
+
+[hi, edges] = histcounts(reshape(handles.images{handles.imageIndexL+1}-tdark,1,[]),'Normalization','cdf');
 handles.scale_left_U = edges(find(hi > 0.9,1,'first'));
 handles.scale_left_L = edges(find(hi > 0.1,1,'first'));
 set(handles.edit_scaleLeftU,'String',num2str(handles.scale_left_U));
 set(handles.edit_scaleLeftL,'String',num2str(handles.scale_left_L));
 
-[hi, edges] = histcounts(reshape(handles.images{handles.imageIndexR+1},1,[]),'Normalization','cdf');
+[hi, edges] = histcounts(reshape(handles.images{handles.imageIndexR+1}-tdark,1,[]),'Normalization','cdf');
 handles.scale_right_U = edges(find(hi > 0.9,1,'first'));
 handles.scale_right_L = edges(find(hi > 0.1,1,'first'));
 set(handles.edit_scaleRightU,'String',num2str(handles.scale_right_U));
