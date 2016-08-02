@@ -22,7 +22,7 @@ function varargout = xrViewer_LatParmRefine(varargin)
 
 % Edit the above text to modify the response to help xrViewer_LatParmRefine
 
-% Last Modified by GUIDE v2.5 16-Mar-2016 13:28:14
+% Last Modified by GUIDE v2.5 02-Aug-2016 13:29:11
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -1127,6 +1127,7 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
             typeLatt = 'monoclinic';
     end
 
+    if(get(handles.checkbox_fitMax,'Value')==0)
     for(i=1:size(handles.DATA_MAXES,1))
         indice1 = length(find(handles.DATA_DSPACING > handles.DATA_MAXES(i,1)-handles.DATA_MAXES(i,3)/2));
         indice2 = length(find(handles.DATA_DSPACING > handles.DATA_MAXES(i,1)+handles.DATA_MAXES(i,3)/2));
@@ -1137,7 +1138,7 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
         assignin('base','xdata',xDataT);
         assignin('base','ydata',yData);
         
-        disp(indice2);
+%         disp(indice2);
 
         p0 = [abs(handles.DATA_MAXES(i,2))/12;...
             0.05;...
@@ -1154,7 +1155,7 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
     %             mean(yData)]
     %         
         [p, resnorm,resid,exitf]  = lsqcurvefit(@(p0,xDataT)pfunc(p0,xDataT,type), p0, xDataT, yData,[0,0,0,0,0,0],[Inf,Inf,Inf,Inf,Inf,Inf]);
-
+        disp(['Exit flag = ',num2str(exitf)])
         handles.DATA_FIT{i,1}=xDataD;
         handles.DATA_FIT{i,2}=xDataT;
         handles.DATA_FIT{i,3}=pfunc(p, xDataT,type);        
@@ -1167,15 +1168,23 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
 
     %     disp(dspc_fit)
     end
-
+    
+    assignin('base','fitted2thetas',tth_fit);
+%     disp(handles.ENERGY)
+    fittedDspacing = keV2Angstrom(handles.ENERGY)./(sind(tth_fit));
+    assignin('base','fittedDspacing',fittedDspacing);
+    
+    else
+        tth_fit = handles.DATA_MAXES(:,4);
+    end
+    
     initParms = [str2double(get(handles.edit_parmA,'String')),...
     str2double(get(handles.edit_parmB,'String')),...
     str2double(get(handles.edit_parmC,'String')),...
     str2double(get(handles.edit_parmAlpha,'String')),...
     str2double(get(handles.edit_parmBeta,'String')),...
     str2double(get(handles.edit_parmGamma,'String'))];
-
-
+    
     hkls = [];
     ct=1;
     for(i=1:size(handles.DATA_MAXES,1))
@@ -2472,3 +2481,12 @@ function edit_parmGamma_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in checkbox_fitMax.
+function checkbox_fitMax_Callback(hObject, eventdata, handles)
+% hObject    handle to checkbox_fitMax (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkbox_fitMax
