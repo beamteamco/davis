@@ -2189,12 +2189,6 @@ function menu_binallFiles_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-[t1] = uigetdir(cd(),'Choose Bin Data Destination Folder');
-
-if(~ischar(t1))
-    return
-end
-
 [f1,f2] = uigetfile({'*.tif','TIF Images (*.tif)';'*.bin*','Binary Data (*.bin)';'*.cor','Corrected Binary Data (*.cor*)';'*.*','All Files (*.*)'},'Select Image Files','Multiselect','On');
 
 if(~ischar(f1) && ~iscell(f1))
@@ -2233,6 +2227,12 @@ else
             fclose(ifs);
         end
     end
+end
+
+[t1] = uigetdir(cd(),'Choose Bin Data Destination Folder');
+
+if(~ischar(t1))
+    return
 end
 
 
