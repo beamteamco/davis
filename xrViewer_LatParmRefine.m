@@ -1742,6 +1742,8 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
 
         handles.DATA_FIT = {};
 
+        if(get(handles.checkbox_fitMax,'Value')==0)
+            
         for(i=1:size(handles.DATA_MAXES,1))
             indice1 = length(find(handles.DATA_DSPACING > handles.DATA_MAXES(i,1)-handles.DATA_MAXES(i,3)/2));
             indice2 = length(find(handles.DATA_DSPACING > handles.DATA_MAXES(i,1)+handles.DATA_MAXES(i,3)/2));
@@ -1778,6 +1780,10 @@ if(handles.loaded==1 && ~isempty(handles.DATA_MAXES))
         %     disp(dspc_fit)
         end
 
+        else
+            tth_fit = handles.DATA_MAXES(:,4);
+        end
+    
         initParms = [str2double(get(handles.edit_parmA,'String')),...
     str2double(get(handles.edit_parmB,'String')),...
     str2double(get(handles.edit_parmC,'String')),...
