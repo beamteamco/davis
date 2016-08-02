@@ -1936,26 +1936,22 @@ disp(handles.imageIndexL)
 disp(handles.imageIndexR)
 
 [hi, edges] = histcounts(reshape(handles.images{handles.imageIndexL+1}-tdark,1,[]),'Normalization','cdf');
-if((edges(find(hi > 0.9,1,'first')) > edges(find(hi > 0.1,1,'first'))))
-    handles.scale_left_U = edges(find(hi > 0.9,1,'first'));
-    handles.scale_left_L = edges(find(hi > 0.1,1,'first'));
-end
+handles.scale_left_U = edges(find(hi > 0.9,1,'first'));
+handles.scale_left_L = edges(find(hi > 0.1,1,'first'));
+
+disp(ha
 set(handles.edit_scaleLeftU,'String',num2str(handles.scale_left_U));
 set(handles.edit_scaleLeftL,'String',num2str(handles.scale_left_L));
 
 [hi, edges] = histcounts(reshape(handles.images{handles.imageIndexR+1}-tdark,1,[]),'Normalization','cdf');
-if((edges(find(hi > 0.9,1,'first')) > edges(find(hi > 0.1,1,'first'))))
-    handles.scale_right_U = edges(find(hi > 0.9,1,'first'));
-    handles.scale_right_L = edges(find(hi > 0.1,1,'first'));
-end
+handles.scale_right_U = edges(find(hi > 0.9,1,'first'));
+handles.scale_right_L = edges(find(hi > 0.1,1,'first'));
 set(handles.edit_scaleRightU,'String',num2str(handles.scale_right_U));
 set(handles.edit_scaleRightL,'String',num2str(handles.scale_right_L));
 
 [hi, edges] = histcounts(reshape(getimage(handles.axes_spec),1,[]),'Normalization','cdf');
-if((edges(find(hi > 0.9,1,'first')) > edges(find(hi > 0.1,1,'first'))))
-    handles.scale_spec_U = edges(find(hi > 0.9,1,'first'));
-    handles.scale_spec_L = edges(find(hi > 0.1,1,'first'));
-end
+handles.scale_spec_U = edges(find(hi > 0.9,1,'first'));
+handles.scale_spec_L = edges(find(hi > 0.1,1,'first'));
 set(handles.edit_scaleSpecU,'String',num2str(handles.scale_spec_U));
 set(handles.edit_scaleSpecL,'String',num2str(handles.scale_spec_L));
 
