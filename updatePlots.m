@@ -309,7 +309,8 @@ if(handles.loaded == 1)
             else
                 tempFilename = [handles.binDir,'/',handles.binStem,'DATA.mat'];
             end
-            handles.tempSave = binData;
+%             handles.tempSave = binData;
+            assignin('base','binData',binData);
             save(tempFilename,'binData');
         end            
 %         disp(get(handles.axes_spec,'UserData'))

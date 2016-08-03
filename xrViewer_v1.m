@@ -2140,8 +2140,18 @@ function menu_saveCurCalc_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+binData = evalin('base','binData');
+if(isempty(binData))
+    msgbox('No binData in workspace to save')
+    return
+end
 
-handles.tempSave
+[t1,t2] = uiputfile({'*.mat','MAT File (*.mat)'},'Save Binning Data');
+if(~ischar(t1))
+    return
+end
+
+save(fullfile(t2,t1),'binData');
 
 
 % --------------------------------------------------------------------
