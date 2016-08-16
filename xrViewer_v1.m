@@ -1684,7 +1684,7 @@ function menu_saveParam_Callback(hObject, eventdata, handles)
 %left index, right index, angle, spread, centerx, centery, radiusU,
 %radiusL,  image#
 
-filename = uiputfile({'*.parm','Parameters File (*.parm)'},'Save Parameters');
+[t1,t2] = uiputfile({'*.parm','Parameters File (*.parm)'},'Save Parameters');
 
 dstring = get(handles.edit_dimages,'String');
 dstring(dstring==',')='$';
@@ -1709,8 +1709,10 @@ outData = {get(handles.edit_directory,'String'),...
         get(handles.edit_radNum,'String'),...
         get(handles.edit_bins,'String')};
 
-if(isnumeric(filename)==0)
-    writetable(cell2table(outData),filename,'WriteVariableNames',0,'FileType','text');
+if(isnumeric(t1)==0)
+    writetable(cell2table(outData),fullfile(t2,t1),'WriteVariableNames',0,'FileType','text');
+    disp('Parameter File Saved');
+    msgbox('Parameter File Saved');
 end
 
 
@@ -1721,8 +1723,8 @@ function menu_openParam_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 [t1,t2] = uigetfile({'*.parm','Parameters File (*.parm)'},'Open Parameters');
-filename=[t2,t1];
-disp(filename)
+filename=fullfile(t2,t1);
+disp(['Opening parameters from ',filename])
 %opens the sequence .dat file and loads it into the uitable
 if(isnumeric(filename)==0)
     fid=fopen(filename);
