@@ -241,6 +241,8 @@ if(handles.loaded == 1)
                 
                 for(i=0:bins-1)
                     sp2 = 360/bins;
+                    
+                    %params = [angle, spread, radius, cX, cY, radiusL]
                     params = [angle+sp2*i, sp2/2, radiusU, cX, cY, radiusL];
                     [im,thetas,d_spacing] = radialCompute(handles,imagespec,0,params,0);
                     disp(['Bin #',num2str(i+1),' completed'])

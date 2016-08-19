@@ -22,7 +22,7 @@ function varargout = xrViewer_v1(varargin)
 
 % Edit the above text to modify the response to help xrViewer_v1
 
-% Last Modified by GUIDE v2.5 29-Jul-2016 11:22:19
+% Last Modified by GUIDE v2.5 19-Aug-2016 14:13:04
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -1971,7 +1971,7 @@ function menu_openIM_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-[t1,t2] = uigetfile({'*.tif','TIF File (*.tif)';'*.bin','Binary Data (2048x2048 uint16 or int32) (*.bin)';'*.*','All Files (*.*)'},'Multiselect','On');
+[t1,t2] = uigetfile({'*.tif;*.tiff','TIF Images (*.tif,*.tiff)';'*.bin','Binary Data (2048x2048 uint16 or int32) (*.bin)';'*.*','All Files (*.*)'},'Multiselect','On');
 
 if(~ischar(t1) && ~iscell(t1))
     return
@@ -2118,20 +2118,22 @@ axis square
 colorbar
 
 
-[t1,t2] = uiputfile({'*.tif','uint16 TIF Image (*.tif)';'.bin','Binary Data 64bit float (*.bin)'});
+[t1,t2] = uiputfile({'*.tif','uint16 TIF Image (*.tif)';'.bin','Binary Data int32 (*.bin)'});
 [~,~,exten] = fileparts(t1);
 
 if(~ischar(t1))
     return
 end
 
-if(exten == '.bin')
+if(strcmp(exten,'.bin'))
+%     temp = (temp - (min(min(temp))))./(max(max(temp))-min(min(temp)));
     ofstream = fopen(fullfile(t2,t1), 'w');
-    fwrite(ofstream, temp(:,:), 'float64');
+    fwrite(ofstream, temp(:,:), 'int32');
     fclose(ofstream);
 else
-    temp = (temp - (min(min(temp))))./(max(max(temp))-min(min(temp)));
-    imwrite(uint16(temp.*2^16),fullfile(t2,t1),'tif');
+%     temp = (temp - (min(min(temp))))./(max(max(temp))-min(min(temp)));
+%     imwrite(uint16(temp.*2^16),fullfile(t2,t1),'tif');
+      imwrite(uint16(temp),fullfile(t2,t1),'tif');
 end
 
 
@@ -2209,7 +2211,8 @@ function menu_binallFiles_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-[f1,f2] = uigetfile({'*.tif','TIF Images (*.tif)';'*.bin*','Binary Data (*.bin)';'*.cor','Corrected Binary Data (*.cor*)';'*.*','All Files (*.*)'},'Select Image Files','Multiselect','On');
+%image files
+[f1,f2] = uigetfile({'*.tif;*.tiff','TIF Images (*.tif,*.tiff)';'*.bin*','Binary Data (*.bin)';'*.cor','Corrected Binary Data (*.cor*)';'*.*','All Files (*.*)'},'Select Image Files','Multiselect','On');
 
 if(~ischar(f1) && ~iscell(f1))
     return
@@ -2226,29 +2229,30 @@ else
     [~,~,exten1] = fileparts(f1{1});
 end
 
-[ff1,ff2] = uigetfile({'*.tif','TIF Images (*.tif)';'*.bin*','Binary Data (*.bin)';'*.cor','Corrected Binary Data (*.cor*)';'*.*','All Files (*.*)'},'Select Dark File');
-
-if(~ischar(ff1))
-    darkIM = zeros(2048,2048);
-else
-    [~,~,exten2] = fileparts(ff1);
-    darkIM = zeros(2048,2048);
-    if(strcmp(exten2,'.tif'))
-        darkIM = double(imread(fullfile(ff2,ff1)));
-    elseif(strcmp(exten2,'.bin') || strcmp(exten2,'.cor'))        
-        d = dir(fullfile(ff2,ff1));        
-        if((d.bytes/(2048*2048)==2))
-            disp('UINT16 Detected');
-            darkIM = double(ReadInGE(fullfile(ff2,ff1)));
-        elseif((d.bytes/(2048*2048)==4))
-            disp('INT32 Detected');
-            ifs = fopen(fullfile(ff2,ff1),'r');
-            darkIM = double(fread(ifs,[2048,2048],'*int32'));
-            fclose(ifs);
-        end
-    end
+%dark files
+[ff1,ff2] = uigetfile({'*.tif;*.tiff','TIF Images (*.tif,*.tiff)';'*.bin*','Binary Data (*.bin)';'*.cor','Corrected Binary Data (*.cor*)';'*.*','All Files (*.*)'},'Select Dark File (Cancel for NONE)','Multiselect','On');
+len2 = 1;
+if(~ischar(ff1) && ~iscell(ff1))
+    len2=0;
 end
 
+if(iscell(ff1))
+    len2 = size(ff1,2);
+end
+
+if(len2==0)
+    darkIM = zeros(2048,2048);
+elseif(len==1)
+    darkIM = readXRD_Image(fullfile(ff2,ff1));
+else
+    darkIM = zeros(2048,2048);
+    for(i=1:len2)
+        darkIM = darkIM + readXRD_Image(fullfile(ff2,ff1{i}));
+    end
+    darkIM = darkIM/len2;
+end
+
+%output direcotry
 [t1] = uigetdir(cd(),'Choose Bin Data Destination Folder');
 
 if(~ischar(t1))
@@ -2256,6 +2260,7 @@ if(~ischar(t1))
 end
 
 
+%options and calculation
 prompt = {'File Stem','# of Bins'};
 title = 'Choose Output File Stem';
 def = {'binData','72'};
@@ -2294,35 +2299,9 @@ for(j=1:len)
     image = zeros(2048,2048);
     
     if(len==1)
-        if(strcmp(exten1,'.tif'))
-            image = double(imread(fullfile(f2,f1)));
-        elseif(strcmp(exten1,'.bin') || strcmp(exten1,'.cor'))        
-            d = dir(fullfile(f2,f1));        
-            if((d.bytes/(2048*2048)==2))
-                disp('UINT16 Detected');
-                image = double(ReadInGE(fullfile(f2,f1)));
-            elseif((d.bytes/(2048*2048)==4))
-                disp('INT32 Detected');
-                ifs = fopen(fullfile(f2,f1),'r');
-                image = double(fread(ifs,[2048,2048],'*int32'));
-                fclose(ifs);
-            end
-        end
+        image = readXRD_Image(fullfile(f2,f1));
     else
-        if(strcmp(exten1,'.tif'))
-            image = double(imread(fullfile(f2,f1{j})));
-        elseif(strcmp(exten1,'.bin') || strcmp(exten1,'.cor'))        
-            d = dir(fullfile(f2,f1{j}));        
-            if((d.bytes/(2048*2048)==2))
-                disp('UINT16 Detected');
-                image = double(ReadInGE(fullfile(f2,f1{j})));
-            elseif((d.bytes/(2048*2048)==4))
-                disp('INT32 Detected');
-                ifs = fopen(fullfile(f2,f1{j}),'r');
-                image = double(fread(ifs,[2048,2048],'*int32'));
-                fclose(ifs);
-            end
-        end
+        image = readXRD_Image(fullfile(f2,f1{j}));
     end
     
     image = image-darkIM;
@@ -2345,3 +2324,161 @@ for(j=1:len)
     disp(['Image #',num2str(j),' Completed and Data Saved']);
 end
 disp('All Images Binned');
+
+
+% --------------------------------------------------------------------
+function menu_sumFiles_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_sumFiles (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+[f1,f2] = uigetfile({'*.tif;*.tiff','TIF Images (*.tif,*.tiff)';'*.bin*','Binary Data (*.bin)';'*.cor','Corrected Binary Data (*.cor*)';'*.*','All Files (*.*)'},'Select Image Files','Multiselect','On');
+
+if(~ischar(f1) && ~iscell(f1))
+    return
+end
+
+len = 1;
+if(iscell(f1))
+    len = size(f1,2);
+end
+
+if(len==1)
+    [~,~,exten1] = fileparts(f1);
+else
+    [~,~,exten1] = fileparts(f1{1});
+end
+
+[ff1,ff2] = uigetfile({'*.tif;*.tiff','TIF Images (*.tif,*.tiff)';'*.bin*','Binary Data (*.bin)';'*.cor','Corrected Binary Data (*.cor*)';'*.*','All Files (*.*)'},'Select Dark File (Cancel for NONE)','Multiselect','On');
+len2 = 1;
+if(~ischar(ff1) && ~iscell(ff1))
+    len2=0;
+end
+
+if(iscell(ff1))
+    len2 = size(ff1,2);
+end
+
+%loads dark image(s) (averages if multiple images selected)
+if(len2==0)
+    darkIM = zeros(2048,2048);
+elseif(len2==1)
+    darkIM = readXRD_Image(fullfile(ff2,ff1));
+else
+    darkIM = zeros(2048,2048);
+    for(i=1:len2)
+        darkIM = darkIM + readXRD_Image(fullfile(ff2,ff1{i}));
+    end
+    darkIM = darkIM/len2;
+end
+
+prompt = {'File Stem',...
+    sprintf('# of images to sum over (0 for summing all). Example: with 20 images, summing over 5 will produces,4 output files, where images were summed in groups of 5 (lexographic order)\n\n# of chosen images = %i',len)};
+title = 'Summing Options';
+def = {'summedImage_','0'};
+answer = inputdlg(prompt,title,1,def);
+
+if(isempty(answer))
+    return
+end
+
+if(str2double(answer{2}) > len)
+    answer{2} = '0';
+end
+
+if(mod(len,str2double(answer{2})) ~= 0 && str2double(answer{2}) ~=0)
+    choice = questdlg(['The # of images you chose is not evenly divisible by ',answer{2},...
+        '. The last file will contain the sum of only ',num2str(mod(len,str2double(answer{2}))),' images. Continue?'],'Alert',...
+        'Yes','No','Yes');
+    switch choice
+        case 'No'
+            return
+    end
+end
+
+[t1] = uigetdir(cd(),'Choose Summed Image Destination Folder');
+
+if(~ischar(t1))
+    return
+end
+
+ex_list = {'*.bin (Binary Data - int32)','*.tif (TIF image, uint16)'};
+[s,v] = listdlg('PromptString','Output File Extention','SelectionMode','single',...
+    'ListString',ex_list);
+if(v==0)
+    return
+end
+exten = ex_list{s}(2:5);
+
+ud = 'Yes';
+if(len2==0)
+    ud='No';
+end
+waitfor(msgbox(sprintf('Summing Options:\n\n\t# of input Images: %s\n\tFile Stem: %s\n\tSubtracting Dark: %s',num2str(len),answer{1},ud)));
+
+
+% computes summed images
+
+%variables for convenience
+% [f1,f2] = [inputfileName,inputFileDir]
+% len1 = # of input images
+% darkIM = dark image
+% answer{1} = output filestem
+% answer{2} = # of images to sum over (0 being sum over all)
+% t1 = output file dir
+% exten = output file exten
+
+interSum = str2double(answer{2});
+if(interSum ~= 0)
+    ctt = 1;
+    for(i=1:ceil(len/interSum))
+        sumIM = zeros(2048,2048);
+        for(j=ctt:interSum*i)
+            image = zeros(2048,2048);
+    
+            if(ctt <= len)
+                if(len==1)
+                    image = readXRD_Image(fullfile(f2,f1));
+                else
+                    image = readXRD_Image(fullfile(f2,f1{j}));
+                end
+                image = image-darkIM;                
+            end
+            ctt = ctt + 1;
+            sumIM = sumIM + image;
+        end
+        
+        %writes summed images
+        if(strcmp(exten,'.bin'))
+            ofstream = fopen(fullfile(t1,[answer{1},num2str(i),'.bin']), 'w');
+            fwrite(ofstream, sumIM(:,:), 'int32');
+            fclose(ofstream);
+        else
+              imwrite(uint16(sumIM),fullfile(t1,[answer{1},num2str(i),'.tif']),'tif');
+        end
+        disp('Summed Image File Saved');
+    end
+else
+    sumIM = zeros(2048,2048);
+    for(j=1:len)
+        image = zeros(2048,2048);
+
+        if(len==1)
+            image = readXRD_Image(fullfile(f2,f1));
+        else
+            image = readXRD_Image(fullfile(f2,f1{j}));
+        end
+        image = image-darkIM;
+        sumIM = sumIM + image;
+    end
+    if(strcmp(exten,'.bin'))
+        ofstream = fopen(fullfile(t1,[answer{1},'.bin']), 'w');
+        fwrite(ofstream, sumIM(:,:), 'int32');
+        fclose(ofstream);
+    else
+        imwrite(uint16(sumIM),fullfile(t1,[answer{1},'.tif']),'tif');
+    end
+    disp('Summed Image File Saved');
+end
+
+msgbox('Summing Complete');
