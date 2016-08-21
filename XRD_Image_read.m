@@ -1,4 +1,4 @@
-function [image] = readXRD_Image(imPath,frame)
+function [image] = XRD_Image_read(imPath,frame)
 
 %Reads in .tif and binary files, as well as frames of GE2 and GE3 files
 %Assumes 2048x2048 images, frame # optional argument

@@ -1,4 +1,4 @@
-function [fcount] = getGEnumFrames(imPath)
+function [fcount] = XRD_Image_GEFrameNum(imPath)
 
 [PATHSTR,NAME,EXT] = fileparts(imPath);
 d = dir(fullfile(PATHSTR,[NAME,EXT]));
@@ -8,6 +8,8 @@ if(strcmp(EXT,'.ge2'))
     fcount = (fsize-8192)/(2048*2048*2);
 elseif(strcmp(EXT,'.ge3'))
     fcount = (fsize-8192)/(2048*2048*4);
+elseif(strcmp(EXT,'.tif') || strcmp(EXT,'.tiff'))
+    fcount = 1;
 else
     fcount = -1;
 end

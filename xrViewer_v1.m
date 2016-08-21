@@ -22,7 +22,7 @@ function varargout = xrViewer_v1(varargin)
 
 % Edit the above text to modify the response to help xrViewer_v1
 
-% Last Modified by GUIDE v2.5 19-Aug-2016 14:13:04
+% Last Modified by GUIDE v2.5 19-Aug-2016 20:26:51
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -2243,11 +2243,11 @@ end
 if(len2==0)
     darkIM = zeros(2048,2048);
 elseif(len==1)
-    darkIM = readXRD_Image(fullfile(ff2,ff1));
+    darkIM = XRD_Image_read(fullfile(ff2,ff1));
 else
     darkIM = zeros(2048,2048);
     for(i=1:len2)
-        darkIM = darkIM + readXRD_Image(fullfile(ff2,ff1{i}));
+        darkIM = darkIM + XRD_Image_read(fullfile(ff2,ff1{i}));
     end
     darkIM = darkIM/len2;
 end
@@ -2299,9 +2299,9 @@ for(j=1:len)
     image = zeros(2048,2048);
     
     if(len==1)
-        image = readXRD_Image(fullfile(f2,f1));
+        image = XRD_Image_read(fullfile(f2,f1));
     else
-        image = readXRD_Image(fullfile(f2,f1{j}));
+        image = XRD_Image_read(fullfile(f2,f1{j}));
     end
     
     image = image-darkIM;
@@ -2363,11 +2363,11 @@ end
 if(len2==0)
     darkIM = zeros(2048,2048);
 elseif(len2==1)
-    darkIM = readXRD_Image(fullfile(ff2,ff1));
+    darkIM = XRD_Image_read(fullfile(ff2,ff1));
 else
     darkIM = zeros(2048,2048);
     for(i=1:len2)
-        darkIM = darkIM + readXRD_Image(fullfile(ff2,ff1{i}));
+        darkIM = darkIM + XRD_Image_read(fullfile(ff2,ff1{i}));
     end
     darkIM = darkIM/len2;
 end
@@ -2438,9 +2438,9 @@ if(interSum ~= 0)
     
             if(ctt <= len)
                 if(len==1)
-                    image = readXRD_Image(fullfile(f2,f1));
+                    image = XRD_Image_read(fullfile(f2,f1));
                 else
-                    image = readXRD_Image(fullfile(f2,f1{j}));
+                    image = XRD_Image_read(fullfile(f2,f1{j}));
                 end
                 image = image-darkIM;                
             end
@@ -2464,9 +2464,9 @@ else
         image = zeros(2048,2048);
 
         if(len==1)
-            image = readXRD_Image(fullfile(f2,f1));
+            image = XRD_Image_read(fullfile(f2,f1));
         else
-            image = readXRD_Image(fullfile(f2,f1{j}));
+            image = XRD_Image_read(fullfile(f2,f1{j}));
         end
         image = image-darkIM;
         sumIM = sumIM + image;
@@ -2482,3 +2482,45 @@ else
 end
 
 msgbox('Summing Complete');
+
+
+% --------------------------------------------------------------------
+function menu_headAnalysis_Callback(hObject, eventdata, handles)
+% hObject    handle to menu_headAnalysis (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+[f1,f2] = uigetfile({'*.ge2','GE2 File (*.ge2)'},'Select GE2 File');
+
+if(~ischar(f1) && ~iscell(f1))
+    return
+end
+
+len = 1;
+if(iscell(f1))
+    len = size(f1,2);
+end
+
+hd = XRD_Image_GEHeader(fullfile(f2,f1));
+nms = fieldnames(hd);
+disp(length(nms))
+
+amnt = 1;
+str = cell(ceil(length(nms)/amnt),amnt);
+
+for(i=1:size(str,1))
+    
+    for(j=1:amnt)
+        tv1 = hd.(nms{amnt*(i-1)+j});
+        if(~ischar(tv1))
+            tv1 = num2str(tv1);
+        end
+        str(i,j) = {sprintf('%s = %s',nms{amnt*(i-1)+j},tv1)};
+    end
+end
+
+f = figure('Name','GE2 Header Data','Position',[100,100,700,500]);
+t = uitable(f,'Data',str);
+set(t,'Units','Normalized');
+set(t,'Position',[0 0 1 1]);
+set(t,'ColumnWidth',num2cell(ones(1,amnt)*(f.Position(3)/amnt)));
