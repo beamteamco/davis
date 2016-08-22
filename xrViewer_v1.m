@@ -2490,7 +2490,7 @@ function menu_headAnalysis_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-[f1,f2] = uigetfile({'*.ge2','GE2 File (*.ge2)'},'Select GE2 File');
+[f1,f2] = uigetfile({'*.ge2','GE2 File (*.ge2)';'*.ge3','GE3 File (*.ge3)'},'Select GE File');
 
 if(~ischar(f1) && ~iscell(f1))
     return

@@ -161,7 +161,7 @@ header = struct(...
     
 names = fieldnames(header);
 
-if(strcmp(EXT,'.ge2'))
+if(strcmp(EXT,'.ge2') || strcmp(EXT,'.ge3'))
     ifs = fopen(fullfile(PATHSTR,[NAME,EXT]),'r','n');
     
     header.(names{01}) = fread(ifs,[1 10],'*char');    
