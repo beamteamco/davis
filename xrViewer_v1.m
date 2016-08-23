@@ -2012,7 +2012,6 @@ if(len == 1)
             disp('Invalid GE file based on specified header size and data formats')
             return
         end        
-        end
         answer = {};
         while(1)
             prompt = {['Upper Image Frame (1-',num2str(fnum),')'],['Upper Image Frame (1-',num2str(fnum),')']};
@@ -2020,7 +2019,7 @@ if(len == 1)
             def = {num2str(fnum),'1'};
             answer = inputdlg(prompt,title,1,def);
             if(str2double(answer{1}) >= str2double(answer{2}) && str2double(answer{2})>=1 && ...
-                    str2double(answer{1}) <= num2str(fnum))
+                    str2double(answer{1}) <= fnum)
                 break
             end
         end
@@ -2031,6 +2030,7 @@ if(len == 1)
         ct=1;
         for(k=num1:num2)
             handles.images(ct) = {XRD_Image_read(fullfile(t2,t1{1}),k)};
+            disp(['Frame #',num2str(k),' read']);
             ct=ct+1;
         end
         

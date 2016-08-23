@@ -22,7 +22,7 @@ function varargout = unpacker(varargin)
 
 % Edit the above text to modify the response to help unpacker
 
-% Last Modified by GUIDE v2.5 27-Jul-2016 18:59:00
+% Last Modified by GUIDE v2.5 22-Aug-2016 21:47:22
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -78,8 +78,29 @@ handles.stem2 = get(handles.edit_stem2,'String');
 set(handles.button_open,'CData',imread('icon_folder.png'));
 set(handles.button_save,'CData',imread('icon_folder.png'));
 set(gcf,'name','Unpacker Tool')
-set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),...
-    handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),'.bin']);
+% set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),...
+%     handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),'.bin']);
+
+handles.stem1 = get(handles.edit_stem1,'String');
+handles.stem2 = get(handles.edit_stem2,'String');
+handles.snumber = str2double(get(handles.edit_splitnum,'String'));
+handles.digits1 = str2double(get(handles.edit_digits1,'String'));
+handles.digits2 = str2double(get(handles.edit_digits2,'String'));
+
+exten = '';
+if(get(handles.checkbox_tif,'Value')==1)
+    exten = '.tif';
+else
+    exten = '.bin';
+end
+
+if(get(handles.checkbox_split,'Value')==1)
+    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),...
+        handles.stem2,num2str(0,['%0',num2str(handles.digits2),'.0f']),exten]);
+else
+    set(handles.text_naming,'String',[handles.stem1,num2str(0,['%0',num2str(handles.digits1),'.0f']),exten]);
+end
+
 
 % Update handles structure
 guidata(hObject, handles);
@@ -473,8 +494,12 @@ if(handles.fileExist==1 && handles.pathExist==1)
     
                 if(get(handles.checkbox_tif,'Value')==1)
                     data = double(data);
-                    data = (data - (min(min(data))))./(max(max(data))-min(min(data)));
-                    imwrite(uint16(data.*2^16),ofilename,'tif');
+                    if(strcmp(format,'*uint16'))
+                        imwrite(uint16(data),ofilename,'tif');
+                    else
+                        data = (data - (min(min(data))))./(max(max(data))-min(min(data)));
+                        imwrite(uint16(data.*2^16),ofilename,'tif');
+                    end
                 else
                     ofstream = fopen(ofilename, 'w');
     %                 fwrite(ofstream, zeros(handles.rows+handles.cols,1), format(2:end));
@@ -515,10 +540,14 @@ if(handles.fileExist==1 && handles.pathExist==1)
                 
             ofilename = fullfile(handles.ofilepath,[handles.stem1,num2str((handles.fnumber-1),['%0',num2str(handles.digits1),'.0f']),exten]);
             
-            if(get(handles.checkbox_tif,'Value')==1)
-                    data = double(data);
+            if(get(handles.checkbox_tif,'Value')==1)                
+                data = double(data);
+                if(strcmp(format,'*uint16'))
+                    imwrite(uint16(data),ofilename,'tif');
+                else
                     data = (data - (min(min(data))))./(max(max(data))-min(min(data)));
                     imwrite(uint16(data.*2^16),ofilename,'tif');
+                end
             else
                 ofstream = fopen(ofilename, 'w');
     %             fwrite(ofstream, zeros(handles.rows+handles.cols,1), format(2:end));
