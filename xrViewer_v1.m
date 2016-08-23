@@ -1971,11 +1971,15 @@ function menu_openIM_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-[t1,t2] = uigetfile({'*.tif;*.tiff','TIF Images (*.tif,*.tiff)';'*.bin','Binary Data (2048x2048 uint16 or int32) (*.bin)';'*.*','All Files (*.*)'},'Multiselect','On');
+[t1,t2] = uigetfile({'*.tif;*.tiff','TIF Images (*.tif,*.tiff)';'*.bin','Binary Data (2048x2048 uint16 or int32) (*.bin)';'*.ge2;*.ge3','GE2/3 Files (*.ge2,*.ge3)';'*.*','All Files (*.*)'},'Multiselect','On');
 
 if(~ischar(t1) && ~iscell(t1))
     return
 end
+
+handles.imageIndexL = 0;
+handles.imageIndexR = 0;
+handles.imageIndexS = 0;
 
 len = 1;
 if(iscell(t1))
@@ -1994,35 +1998,53 @@ if(len==1)
     clear(t1);
     t1 = temp;
 end
-for i=1:handles.count
-    %     disp([handles.directory,'\',handles.imageNames{i,1}])
-    try
-%         disp(fullfile(handles.directory,t1{i}));
-        handles.images(i) = {double(imread(fullfile(handles.directory,t1{i})))};
-    catch
-        disp('Image not tiff image, opening as data');
-        d = dir(fullfile(t2,t1{i}));
-        disp(sprintf('Nuber of Bytes: %i',d.bytes))
-        
-        if((d.bytes/(2048*2048)==2))
-            disp('UINT16 Detected');
-            handles.images(i) = {ReadInGE(fullfile(t2,t1{i}))};
-        elseif((d.bytes/(2048*2048)==4))
-            disp('INT32 Detected');
-            ifs = fopen(fullfile(t2,t1{i}),'r');
-            handles.images(i) = {double(fread(ifs,[2048,2048],'*int32'))};
-            fclose(ifs);
-        else
-            disp('Data Type Not Supported');
-            return;
-        end
-    end
-%         tempp = handles.images(i);
-%         assignin('base','assignedImage',tempp)
-        disp(fullfile(t2,t1{i}))
-end
 
-    handles.count = len;
+%loads images. If multiple ge2 files selected, will only load first frame
+%form each. If one ge2 file selected, will give option to load frames
+%within.
+
+if(len == 1)
+    [~,~,exten] = fileparts(fullfile(t2,t1{1}));
+    
+    if(strcmp(exten,'.ge2') || strcmp(exten,'.ge3'))
+        fnum = XRD_Image_GEFrameNum(fullfile(t2,t1{1}));
+        if(fnum==-1)
+            disp('Invalid GE file based on specified header size and data formats')
+            return
+        end        
+        end
+        answer = {};
+        while(1)
+            prompt = {['Upper Image Frame (1-',num2str(fnum),')'],['Upper Image Frame (1-',num2str(fnum),')']};
+            title = 'Select GE Frames to Load (WARNING: Large #''s may take up too much memory and cause crashes)';
+            def = {num2str(fnum),'1'};
+            answer = inputdlg(prompt,title,1,def);
+            if(str2double(answer{1}) >= str2double(answer{2}) && str2double(answer{2})>=1 && ...
+                    str2double(answer{1}) <= num2str(fnum))
+                break
+            end
+        end
+        
+        num1 = str2double(answer{2});
+        num2 = str2double(answer{1});
+        
+        ct=1;
+        for(k=num1:num2)
+            handles.images(ct) = {XRD_Image_read(fullfile(t2,t1{1}),k)};
+            ct=ct+1;
+        end
+        
+        handles.count = length(num1:num2);
+    else
+        handles.images(1) = {XRD_Image_read(fullfile(t2,t1{1}))};
+        disp(fullfile(t2,t1{1}))
+    end
+else
+    for i=1:handles.count
+        handles.images(i) = {XRD_Image_read(fullfile(t2,t1{i}))};
+        disp(fullfile(t2,t1{i}))
+    end
+end
     set(handles.text_count,'String',['Count: ',num2str(handles.count)]);
     
     if(handles.loaded==0)
@@ -2490,7 +2512,7 @@ function menu_headAnalysis_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-[f1,f2] = uigetfile({'*.ge2','GE2 File (*.ge2)';'*.ge3','GE3 File (*.ge3)'},'Select GE File');
+[f1,f2] = uigetfile({'*.ge2;*.ge3','GE2/3 Files (*.ge2,*.ge3)'},'Select GE File');
 
 if(~ischar(f1) && ~iscell(f1))
     return
@@ -2519,7 +2541,7 @@ for(i=1:size(str,1))
     end
 end
 
-f = figure('Name','GE2 Header Data','Position',[100,100,700,500]);
+f = figure('Name','GE Header Data','Position',[100,100,700,500]);
 t = uitable(f,'Data',str);
 set(t,'Units','Normalized');
 set(t,'Position',[0 0 1 1]);
